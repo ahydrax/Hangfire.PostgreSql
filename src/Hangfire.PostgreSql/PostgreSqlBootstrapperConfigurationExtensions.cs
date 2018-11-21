@@ -93,7 +93,7 @@ namespace Hangfire.PostgreSql
             IConnectionBuilder connectionBuilder,
             PostgreSqlStorageOptions options)
         {
-            var storage = new PostgreSqlStorage(connectionBuilder, options);
+            var storage = new PostgreSqlStorage(connectionBuilder, null, options);
             configuration.UseStorage(storage);
 
             return storage;
@@ -165,7 +165,7 @@ namespace Hangfire.PostgreSql
             IConnectionBuilder connectionBuilder,
             PostgreSqlStorageOptions options)
         {
-            var storage = new PostgreSqlStorage(connectionBuilder, options);
+            var storage = new PostgreSqlStorage(connectionBuilder, null, options);
             configuration.UseStorage(storage);
 
             return storage;

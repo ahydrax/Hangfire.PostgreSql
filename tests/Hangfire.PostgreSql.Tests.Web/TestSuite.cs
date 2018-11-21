@@ -65,10 +65,10 @@ namespace Hangfire.PostgreSql.Tests.Web
         [Queue("queue1")]
         public static void ContinuationPartA()
         {
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            //Thread.Sleep(TimeSpan.FromSeconds(5));
         }
 
-        [AutomaticRetry(Attempts = 0)]
+        [AutomaticRetry(Attempts = 0, LogEvents = false, OnAttemptsExceeded = AttemptsExceededAction.Delete)]
         public static void ContinuationPartB()
         {
             throw new InvalidOperationException("TEST OK");
@@ -87,7 +87,7 @@ namespace Hangfire.PostgreSql.Tests.Web
             const int tasks = 5000;
             Parallel.For(0, tasks, new ParallelOptions { MaxDegreeOfParallelism = 10 }, i =>
              {
-                 bjc.Enqueue(() => ContinuationPartC());
+                 bjc.Enqueue(() => ContinuationTest());
              });
 
             return new

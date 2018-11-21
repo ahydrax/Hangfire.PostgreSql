@@ -38,7 +38,21 @@ namespace Hangfire.PostgreSql
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="connectionString"/> is not valid PostgreSql connection string.</exception>
         public PostgreSqlStorage(string connectionString, PostgreSqlStorageOptions options)
-            : this(new DefaultConnectionBuilder(connectionString), options)
+            : this(new DefaultConnectionBuilder(connectionString), null, options)
+        {
+
+        }
+
+        /// <summary>
+        /// Initializes PostgreSqlStorage with the provided connection string and the provided PostgreSqlStorageOptions.
+        /// </summary>
+        /// <param name="connectionString">A Postgres connection string</param>
+        /// <param name="options"></param>
+        /// <exception cref="ArgumentNullException"><paramref name="connectionString"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="connectionString"/> is not valid PostgreSql connection string.</exception>
+        public PostgreSqlStorage(string connectionString, IJobQueue queue, PostgreSqlStorageOptions options)
+            : this(new DefaultConnectionBuilder(connectionString), queue, options)
         {
 
         }
@@ -50,11 +64,11 @@ namespace Hangfire.PostgreSql
         /// <exception cref="ArgumentNullException"><paramref name="connectionBuilder"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="connectionBuilder"/> is not valid PostgreSql connection string </exception>
         public PostgreSqlStorage(IConnectionBuilder connectionBuilder)
-            : this(connectionBuilder, new PostgreSqlStorageOptions())
+            : this(connectionBuilder, null, new PostgreSqlStorageOptions())
         {
 
         }
-        
+
         /// <summary>
         /// Initializes PostgreSqlStorage with the provided connection builder and the provided PostgreSqlStorageOptions.
         /// </summary>
@@ -63,7 +77,7 @@ namespace Hangfire.PostgreSql
         /// <exception cref="ArgumentNullException"><paramref name="connectionBuilder"/> is null.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="connectionBuilder"/> has an invalid PostgreSql connection string.</exception>
-        public PostgreSqlStorage(IConnectionBuilder connectionBuilder, PostgreSqlStorageOptions options)
+        public PostgreSqlStorage(IConnectionBuilder connectionBuilder, IJobQueue queue, PostgreSqlStorageOptions options)
         {
             Guard.ThrowIfNull(connectionBuilder, nameof(connectionBuilder));
             Guard.ThrowIfNull(options, nameof(options));
@@ -73,7 +87,7 @@ namespace Hangfire.PostgreSql
 
             _connectionProvider = CreateConnectionProvider(connectionBuilder);
 
-            var queue = new JobQueue(_connectionProvider, _options);
+            queue = queue ?? new JobQueue(_connectionProvider, _options);
             _storageConnection = new StorageConnection(_connectionProvider, queue, _options);
             _monitoringApi = new MonitoringApi(_connectionProvider);
 

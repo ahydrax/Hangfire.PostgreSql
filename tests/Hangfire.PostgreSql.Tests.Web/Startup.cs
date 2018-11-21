@@ -1,4 +1,5 @@
 ﻿using System;
+using Hangfire.PostgreSql.Kafka;
 using Hangfire.PostgreSql.Tests.Integration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -36,6 +37,9 @@ namespace Hangfire.PostgreSql.Tests.Web
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.PostgreSqlLocksCount);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.PostgreSqlServerVersion);
 
+                //var kafkaQueue = new KafkaJobQueue();
+                //configuration.UseStorage(new PostgreSqlStorage(GetConnectionString(), kafkaQueue,
+                //    new PostgreSqlStorageOptions()));
                 configuration.UsePostgreSqlStorage(GetConnectionString());
             });
         }

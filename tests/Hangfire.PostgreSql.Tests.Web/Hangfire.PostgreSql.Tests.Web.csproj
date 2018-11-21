@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Hangfire.PostgreSql.Kafka\Hangfire.PostgreSql.Kafka.csproj" />
     <ProjectReference Include="..\..\src\Hangfire.PostgreSql\Hangfire.PostgreSql.csproj" />
     <ProjectReference Include="..\Hangfire.PostgreSql.Tests\Hangfire.PostgreSql.Tests.csproj" />
   </ItemGroup>
