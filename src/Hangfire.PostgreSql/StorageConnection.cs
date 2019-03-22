@@ -54,7 +54,7 @@ namespace Hangfire.PostgreSql
 
             const string createJobSql = @"
 INSERT INTO job (invocationdata, arguments, createdat, expireat)
-VALUES (@invocationData, @arguments, @createdAt, @expireAt) 
+VALUES (@invocationData, @arguments, @createdAt, @expireAt)
 RETURNING id;
 ";
             var invocationData = InvocationData.Serialize(job);
@@ -105,8 +105,8 @@ VALUES (@jobId, @name, @value);
             Guard.ThrowIfNull(jobId, nameof(jobId));
 
             const string sql = @"
-SELECT ""invocationdata"" ""invocationData"", ""statename"" ""stateName"", ""arguments"", ""createdat"" ""createdAt"" 
-FROM job 
+SELECT ""invocationdata"" ""invocationData"", ""statename"" ""stateName"", ""arguments"", ""createdat"" ""createdAt""
+FROM job
 WHERE ""id"" = @id;
 ";
 
@@ -230,10 +230,10 @@ DO UPDATE SET ""value"" = @value
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
                 const string query = @"
-SELECT ""value"" 
-FROM ""set"" 
-WHERE ""key"" = @key 
-AND ""score"" BETWEEN @from AND @to 
+SELECT ""value""
+FROM ""set""
+WHERE ""key"" = @key
+AND ""score"" BETWEEN @from AND @to
 ORDER BY ""score"" LIMIT 1;
 ";
                 return connectionHolder.Connection.Query<string>(query, new { key, from = fromScore, to = toScore })
@@ -268,20 +268,21 @@ DO UPDATE SET value = @value
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
+
             using (var connectionHolder = _connectionProvider.AcquireConnection())
-            using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.ReadCommitted))
+            using (var transactionHolder = connectionHolder.BeginTransaction(IsolationLevel.ReadCommitted))
             {
                 const string query = @"
-SELECT field AS Field, value AS Value 
-FROM hash 
+SELECT field AS Field, value AS Value
+FROM hash
 WHERE key = @key
 ;";
-                var result = transaction.Connection.Query<SqlHash>(
+                var result = transactionHolder.Transaction.Connection.Query<SqlHash>(
                         query,
                         new { key = key },
-                        transaction)
+                        transactionHolder.Transaction)
                     .ToDictionary(x => x.Field, x => x.Value);
-                transaction.Commit();
+                transactionHolder.Commit();
 
                 return result.Count != 0 ? result : null;
             }
@@ -328,8 +329,8 @@ DO UPDATE SET data = @data, lastheartbeat = NOW() AT TIME ZONE 'UTC'
             Guard.ThrowIfNull(serverId, nameof(serverId));
 
             const string query = @"
-UPDATE server 
-SET lastheartbeat = NOW() AT TIME ZONE 'UTC' 
+UPDATE server
+SET lastheartbeat = NOW() AT TIME ZONE 'UTC'
 WHERE id = @id;";
 
             using (var connectionHolder = _connectionProvider.AcquireConnection())
@@ -417,7 +418,7 @@ WHERE id = @id;";
 
             const string query = @"
 select ""value"" from (
-    select ""value"", row_number() over (order by ""id"" desc) as row_num 
+    select ""value"", row_number() over (order by ""id"" desc) as row_num
     from ""list""
     where ""key"" = @key ) as s
 where s.row_num between @startingFrom and @endingAt";
@@ -463,9 +464,9 @@ where s.row_num between @startingFrom and @endingAt";
 
             const string query = @"
 select ""value"" from (
-    select ""value"", row_number() over (order by ""id"" ASC) as row_num 
+    select ""value"", row_number() over (order by ""id"" ASC) as row_num
     from ""set""
-    where ""key"" = @key 
+    where ""key"" = @key
     ) as s
 where s.row_num between @startingFrom and @endingAt";
 

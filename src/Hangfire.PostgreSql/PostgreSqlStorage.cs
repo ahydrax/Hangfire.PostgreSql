@@ -6,6 +6,7 @@ using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Maintenance;
 using Hangfire.Server;
 using Hangfire.Storage;
+using Npgsql;
 
 namespace Hangfire.PostgreSql
 {
@@ -17,6 +18,8 @@ namespace Hangfire.PostgreSql
         private readonly string _storageInfo;
         private readonly StorageConnection _storageConnection;
         private readonly MonitoringApi _monitoringApi;
+        private readonly NpgsqlTransaction _transaction = null;
+        private readonly string _schemaName;
 
         /// <summary>
         /// Initializes PostgreSqlStorage with the provided connection string and default PostgreSqlStorageOptions.
@@ -40,7 +43,6 @@ namespace Hangfire.PostgreSql
         public PostgreSqlStorage(string connectionString, PostgreSqlStorageOptions options)
             : this(new DefaultConnectionBuilder(connectionString), options)
         {
-
         }
 
         /// <summary>
@@ -52,9 +54,8 @@ namespace Hangfire.PostgreSql
         public PostgreSqlStorage(IConnectionBuilder connectionBuilder)
             : this(connectionBuilder, new PostgreSqlStorageOptions())
         {
-
         }
-        
+
         /// <summary>
         /// Initializes PostgreSqlStorage with the provided connection builder and the provided PostgreSqlStorageOptions.
         /// </summary>
@@ -78,16 +79,40 @@ namespace Hangfire.PostgreSql
             _monitoringApi = new MonitoringApi(_connectionProvider);
 
             var builder = connectionBuilder.ConnectionStringBuilder;
-            _storageInfo = $"PostgreSQL Server: Host: {builder.Host}, DB: {builder.Database}, Schema: {builder.SearchPath}, Pool: {_connectionProvider.GetType().Name}";
+            _storageInfo =
+                $"PostgreSQL Server: Host: {builder.Host}, DB: {builder.Database}, Schema: {builder.SearchPath}, Pool: {_connectionProvider.GetType().Name}";
+
+            _schemaName = builder.SearchPath;
 
             PrepareSchemaIfNecessary(builder.SearchPath);
+        }
+
+        public PostgreSqlStorage(NpgsqlTransaction transaction, string schemaName)
+            : this(transaction, schemaName, new PostgreSqlStorageOptions())
+        {
+        }
+
+        public PostgreSqlStorage(NpgsqlTransaction transaction, string schemaName, PostgreSqlStorageOptions options)
+        {
+            Guard.ThrowIfNull(transaction, nameof(transaction));
+            Guard.ThrowIfNull(schemaName, nameof(schemaName));
+            Guard.ThrowIfNull(options, nameof(options));
+
+            _options = options;
+            _schemaName = schemaName;
+            _transaction = transaction;
+            _connectionProvider = new NpgsqlTransactionConnectionProvider(_transaction, _schemaName);
+
+            var queue = new JobQueue(_connectionProvider, _options);
+            _storageConnection = new StorageConnection(_connectionProvider, queue, _options);
+            _monitoringApi = new MonitoringApi(_connectionProvider);
         }
 
         private static IConnectionProvider CreateConnectionProvider(IConnectionBuilder connectionBuilder)
         {
             return connectionBuilder.ConnectionStringBuilder.Pooling
                 ? new NpgsqlConnectionProvider(connectionBuilder)
-                : (IConnectionProvider)new DefaultConnectionProvider(connectionBuilder);
+                : (IConnectionProvider) new DefaultConnectionProvider(connectionBuilder);
         }
 
         private void PrepareSchemaIfNecessary(string schemaName)

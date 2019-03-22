@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Globalization;
 using System.Linq;
 using Dapper;
@@ -30,16 +31,15 @@ namespace Hangfire.PostgreSql
             _commandQueue = new Queue<Action<NpgsqlConnection, NpgsqlTransaction>>();
         }
 
+
+
         public override void Commit()
         {
             using (var connectionHolder = _connectionProvider.AcquireConnection())
-            using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.RepeatableRead))
+            using (var transactionHolder = connectionHolder.BeginTransaction(IsolationLevel.RepeatableRead))
             {
-                foreach (var command in _commandQueue)
-                {
-                    command(connectionHolder.Connection, transaction);
-                }
-                transaction.Commit();
+                RunCommands(connectionHolder.Connection, transactionHolder.Transaction);
+                transactionHolder.Commit();
             }
         }
 
@@ -60,7 +60,7 @@ WHERE id = @id;
         {
             const string query = @"
 UPDATE job
-SET expireat = NULL 
+SET expireat = NULL
 WHERE id = @id;
 ";
             var id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture);
@@ -127,7 +127,7 @@ VALUES (@jobId, @name, @reason, @createdAt, @data);
         public override void IncrementCounter(string key, TimeSpan expireIn)
         {
             const string query = @"
-INSERT INTO counter(key, value, expireat) 
+INSERT INTO counter(key, value, expireat)
 VALUES (@key, @value, NOW() AT TIME ZONE 'UTC' + @expireIn)";
 
             QueueCommand((con, trx) => con.Execute(
@@ -146,7 +146,7 @@ VALUES (@key, @value, NOW() AT TIME ZONE 'UTC' + @expireIn)";
         public override void DecrementCounter(string key, TimeSpan expireIn)
         {
             const string query = @"
-INSERT INTO counter(key, value, expireat) 
+INSERT INTO counter(key, value, expireat)
 VALUES (@key, @value, NOW() AT TIME ZONE 'UTC' + @expireIn);";
 
             QueueCommand((con, trx) => con.Execute(query,
@@ -176,8 +176,8 @@ DO UPDATE SET score = @score
         public override void RemoveFromSet(string key, string value)
         {
             QueueCommand((con, trx) => con.Execute(@"
-DELETE FROM set 
-WHERE key = @key 
+DELETE FROM set
+WHERE key = @key
 AND value = @value;
 ",
                 new { key, value }, trx));
@@ -186,7 +186,7 @@ AND value = @value;
         public override void InsertToList(string key, string value)
         {
             QueueCommand((con, trx) => con.Execute(@"
-INSERT INTO list (key, value) 
+INSERT INTO list (key, value)
 VALUES (@key, @value);
 ",
                 new { key, value }, trx));
@@ -195,8 +195,8 @@ VALUES (@key, @value);
         public override void RemoveFromList(string key, string value)
         {
             QueueCommand((con, trx) => con.Execute(@"
-DELETE FROM list 
-WHERE key = @key 
+DELETE FROM list
+WHERE key = @key
 AND value = @value;
 ",
                 new { key, value }, trx));
@@ -208,10 +208,10 @@ AND value = @value;
 DELETE FROM list AS source
 WHERE key = @key
 AND id NOT IN (
-    SELECT id 
+    SELECT id
     FROM list AS keep
     WHERE keep.key = source.key
-    ORDER BY id 
+    ORDER BY id
     OFFSET @start LIMIT @end
 );
 ";
@@ -352,5 +352,13 @@ DO UPDATE SET value = @value
         }
 
         private void QueueCommand(Action<NpgsqlConnection, NpgsqlTransaction> action) => _commandQueue.Enqueue(action);
+
+        private void RunCommands(NpgsqlConnection connection, NpgsqlTransaction transaction)
+        {
+            foreach (var command in _commandQueue)
+            {
+                command(connection, transaction);
+            }
+        }
     }
 }
