@@ -90,7 +90,7 @@ WHERE j.id = @id;
                     name = state.Name,
                     reason = state.Reason,
                     createdAt = DateTime.UtcNow,
-                    data = JobHelper.ToJson(state.SerializeData()),
+                    data = SerializationHelper.Serialize(state.SerializeData()),
                     id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture)
                 }, trx));
         }

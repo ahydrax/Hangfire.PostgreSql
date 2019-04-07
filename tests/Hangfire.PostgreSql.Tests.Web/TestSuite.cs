@@ -57,9 +57,13 @@ namespace Hangfire.PostgreSql.Tests.Web
         public static void ContinuationTest()
         {
             var jobA = BackgroundJob.Enqueue(() => ContinuationPartA());
-            var jobB = BackgroundJob.ContinueWith(jobA, () => ContinuationPartB(),
+            var jobB = BackgroundJob.ContinueJobWith(jobA,
+                () => ContinuationPartB(),
                 JobContinuationOptions.OnlyOnSucceededState);
-            BackgroundJob.ContinueWith(jobB, () => ContinuationPartC(), JobContinuationOptions.OnAnyFinishedState);
+
+            BackgroundJob.ContinueJobWith(jobB,
+                () => ContinuationPartC(),
+                JobContinuationOptions.OnAnyFinishedState);
         }
 
         [Queue("queue1")]

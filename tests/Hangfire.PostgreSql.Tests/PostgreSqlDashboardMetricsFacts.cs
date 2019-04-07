@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Hangfire.Annotations;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql.Tests.Utils;
 using Xunit;
@@ -11,6 +12,7 @@ namespace Hangfire.PostgreSql.Tests
         [MemberData(nameof(GetMetrics))]
         public void DashboardMetric_Returns_Value(DashboardMetric dashboardMetric)
         {
+
             var page = new TestPage();
 
             var metric = dashboardMetric.Func(page);
@@ -35,8 +37,10 @@ namespace Hangfire.PostgreSql.Tests
             {
                 var connectionString = ConnectionUtils.GetConnectionString();
                 var storage = new PostgreSqlStorage(connectionString, new PostgreSqlStorageOptions { PrepareSchemaIfNecessary = false });
-                // HACK: Workaround for injection test storage
-                GetType().GetProperty(nameof(Storage)).SetValue(this, storage);
+
+                var context = (DashboardContext)GetType().GetProperty("Context", typeof(DashboardContext)).GetValue(this);
+
+                typeof(DashboardContext).GetProperty("Storage", typeof(JobStorage)).SetValue(context, storage);
             }
 
             public override void Execute() { }

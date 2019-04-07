@@ -41,7 +41,7 @@ namespace Hangfire.PostgreSql.Maintenance
 
         public void Execute(BackgroundProcessContext context)
         {
-            Execute(context.CancellationToken);
+            Execute(context.StoppingToken);
         }
 
         public void Execute(CancellationToken cancellationToken)

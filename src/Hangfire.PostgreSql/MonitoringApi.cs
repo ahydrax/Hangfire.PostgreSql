@@ -104,7 +104,7 @@ AND queue = @queue
             var servers = new List<ServerDto>(serverDtos.Count);
             foreach (var server in serverDtos)
             {
-                var data = JobHelper.FromJson<ServerData>(server.Data);
+                var data = SerializationHelper.Deserialize<ServerData>(server.Data);
                 servers.Add(new ServerDto
                 {
                     Name = server.Id,
@@ -227,7 +227,7 @@ ORDER BY id DESC;
                                        StateName = x.Name,
                                        CreatedAt = x.CreatedAt,
                                        Reason = x.Reason,
-                                       Data = JobHelper.FromJson<Dictionary<string, string>>(x.Data)
+                                       Data = SerializationHelper.Deserialize<Dictionary<string, string>>(x.Data)
                                    })
                                    .ToList();
 

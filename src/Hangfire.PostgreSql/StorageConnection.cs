@@ -57,7 +57,7 @@ INSERT INTO job (invocationdata, arguments, createdat, expireat)
 VALUES (@invocationData, @arguments, @createdAt, @expireAt) 
 RETURNING id;
 ";
-            var invocationData = InvocationData.Serialize(job);
+            var invocationData = InvocationData.SerializeJob(job);
 
             int jobId;
             using (var connectionHolder = _connectionProvider.AcquireConnection())
@@ -67,7 +67,7 @@ RETURNING id;
                     createJobSql,
                     new
                     {
-                        invocationData = JobHelper.ToJson(invocationData),
+                        invocationData = SerializationHelper.Serialize(invocationData),
                         arguments = invocationData.Arguments,
                         createdAt = createdAt,
                         expireAt = createdAt.Add(expireIn)
@@ -121,7 +121,7 @@ WHERE ""id"" = @id;
             if (jobData == null) return null;
 
             // TODO: conversion exception could be thrown.
-            var invocationData = JobHelper.FromJson<InvocationData>(jobData.InvocationData);
+            var invocationData = SerializationHelper.Deserialize<InvocationData>(jobData.InvocationData);
             invocationData.Arguments = jobData.Arguments;
 
             Job job = null;
@@ -129,7 +129,7 @@ WHERE ""id"" = @id;
 
             try
             {
-                job = invocationData.Deserialize();
+                job = invocationData.DeserializeJob();
             }
             catch (JobLoadException ex)
             {
@@ -170,7 +170,7 @@ WHERE j.id = @jobId;
             {
                 Name = sqlState.Name,
                 Reason = sqlState.Reason,
-                Data = JobHelper.FromJson<Dictionary<string, string>>(sqlState.Data)
+                Data = SerializationHelper.Deserialize<Dictionary<string, string>>(sqlState.Data)
             };
         }
 
@@ -309,7 +309,7 @@ DO UPDATE SET data = @data, lastheartbeat = NOW() AT TIME ZONE 'UTC'
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
                 connectionHolder.Connection.Execute(query,
-                    new { id = serverId, data = JobHelper.ToJson(data) });
+                    new { id = serverId, data = SerializationHelper.Serialize(data) });
             }
         }
 

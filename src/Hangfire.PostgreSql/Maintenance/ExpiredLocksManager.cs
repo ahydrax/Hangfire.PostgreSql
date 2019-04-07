@@ -19,7 +19,7 @@ namespace Hangfire.PostgreSql.Maintenance
             _lockTimeOut = lockTimeOut;
         }
 
-        public void Execute(BackgroundProcessContext context) => Execute(context.CancellationToken);
+        public void Execute(BackgroundProcessContext context) => Execute(context.StoppingToken);
 
         public void Execute(CancellationToken cancellationToken)
         {

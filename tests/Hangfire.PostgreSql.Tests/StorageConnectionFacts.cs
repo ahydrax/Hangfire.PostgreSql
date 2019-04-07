@@ -153,7 +153,7 @@ namespace Hangfire.PostgreSql.Tests
                 var invocationData = JobHelper.FromJson<InvocationData>((string)sqlJob.invocationdata);
                 invocationData.Arguments = sqlJob.arguments;
 
-                var job = invocationData.Deserialize();
+                var job = invocationData.DeserializeJob();
                 Assert.Equal(typeof(Worker), job.Type);
                 Assert.Equal(nameof(Worker.DoWork), job.Method.Name);
                 Assert.Equal("Hello", job.Args[0]);

@@ -43,7 +43,7 @@ namespace Hangfire.PostgreSql.Maintenance
 
         public override string ToString() => "PostgreSql Expiration Manager";
 
-        public void Execute(BackgroundProcessContext context) => Execute(context.CancellationToken);
+        public void Execute(BackgroundProcessContext context) => Execute(context.StoppingToken);
 
         public void Execute(CancellationToken cancellationToken)
         {
