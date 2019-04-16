@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Diagnostics;
 using System.Threading;
-using System.Transactions;
 using Hangfire.Logging;
 using Npgsql;
 

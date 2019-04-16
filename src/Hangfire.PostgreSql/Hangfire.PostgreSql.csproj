@@ -19,9 +19,6 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Company>Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Company>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
-    <DefineConstants>$(DefineConstants);NETCORE1</DefineConstants>
-  </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
     <Reference Include="System.Configuration" />
     <Reference Include="System" />
