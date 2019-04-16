@@ -39,7 +39,7 @@ namespace Hangfire.PostgreSql.Connectivity
             }
         }
 
-        public TransactionHolder BeginTransaction(IsolationLevel level)
+        public TransactionHolder BeginTransaction(System.Data.IsolationLevel level)
         {
             if (_transaction != null)
             {
