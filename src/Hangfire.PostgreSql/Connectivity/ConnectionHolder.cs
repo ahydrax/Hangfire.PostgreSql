@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Data.Common;
+using System.Transactions;
 using Npgsql;
 
 namespace Hangfire.PostgreSql.Connectivity
@@ -43,6 +44,11 @@ namespace Hangfire.PostgreSql.Connectivity
             if (_transaction != null)
             {
                 return new TransactionHolder(_transaction, false, holder => { });
+            }
+
+            if (Transaction.Current != null)
+            {
+                return new TransactionHolder(null, false, holder => { });
             }
 
             var transaction = _connection.BeginTransaction(level);

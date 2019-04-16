@@ -4,7 +4,7 @@ using Npgsql;
 
 namespace Hangfire.PostgreSql.Connectivity
 {
-    public class TransactionHolder : IDisposable
+    public class TransactionHolder : ITransactionHolder
     {
         private readonly NpgsqlTransaction _transaction;
         private readonly Action<TransactionHolder> _transactionDisposer;
