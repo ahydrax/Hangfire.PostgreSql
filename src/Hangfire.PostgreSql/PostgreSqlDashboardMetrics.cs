@@ -58,7 +58,7 @@ namespace Hangfire.PostgreSql
         [PublicAPI]
         public static readonly DashboardMetric CacheHitsPerRead = new DashboardMetric(
             "pg:cache:hitratio",
-            "Cache Hits Per Read",
+            "Cache hit ratio",
             page => GetMetricByQuery<long>(page, @"SELECT ROUND(SUM(blks_hit) / SUM(blks_read)) FROM pg_stat_database;"));
 
         [PublicAPI]
