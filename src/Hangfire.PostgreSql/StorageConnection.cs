@@ -308,8 +308,7 @@ DO UPDATE SET data = @data, lastheartbeat = NOW() AT TIME ZONE 'UTC'
 
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
-                connectionHolder.Connection.Execute(query,
-                    new { id = serverId, data = SerializationHelper.Serialize(data) });
+                connectionHolder.Connection.Execute(query, new { id = serverId, data = SerializationHelper.Serialize(data) });
             }
         }
 
@@ -330,7 +329,10 @@ DO UPDATE SET data = @data, lastheartbeat = NOW() AT TIME ZONE 'UTC'
             const string query = @"
 UPDATE server 
 SET lastheartbeat = NOW() AT TIME ZONE 'UTC' 
-WHERE id = @id;";
+WHERE id = @id
+ON CONFLICT (id)
+DO UPDATE SET lastheartbeat = NOW() AT TIME ZONE 'UTC';
+";
 
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {

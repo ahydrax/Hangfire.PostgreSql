@@ -12,22 +12,22 @@ namespace Hangfire.PostgreSql.Tests
     public class ExpiredLockManagerFacts
     {
         [Fact, CleanDatabase]
-        public void Execute_RemovesExpiredLocks()
+        public void Execute_RemovesOnlyExpiredLocks()
         {
-            // Arrange
-            var timeout = TimeSpan.FromSeconds(7);
-
             UseConnection((provider, connection) =>
             {
-                connection.Execute(@"INSERT INTO lock(resource, acquired) VALUES ('hello', current_timestamp at time zone 'UTC' - @timeout)", new { timeout });
+                // Arrange
+                var timeout = TimeSpan.FromSeconds(7);
+                connection.Execute(@"INSERT INTO lock(resource, acquired) VALUES ('fresh_lock', NOW() at time zone 'UTC')");
+                connection.Execute(@"INSERT INTO lock(resource, acquired) VALUES ('expired_lock', NOW() at time zone 'UTC' - @timeout)", new { timeout });
 
                 // Act
                 var expiredLocksManager = new ExpiredLocksManager(provider, timeout);
                 expiredLocksManager.Execute(CancellationToken.None);
 
                 // Assert
-                var locksCount = connection.ExecuteScalar<int>(@"SELECT COUNT(*) FROM lock WHERE resource = 'hello'");
-                Assert.Equal(0, locksCount);
+                var locksCount = connection.ExecuteScalar<int>(@"SELECT COUNT(*) FROM lock");
+                Assert.Equal(1, locksCount);
             });
         }
 
