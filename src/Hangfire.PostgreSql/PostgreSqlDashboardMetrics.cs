@@ -28,31 +28,31 @@ namespace Hangfire.PostgreSql
         [PublicAPI]
         public static readonly DashboardMetric MaxConnections = new DashboardMetric(
             "pg:connections:max",
-            "Max Connections",
+            "Max connections",
             page => GetMetricByQuery<long>(page, @"SHOW max_connections;"));
 
         [PublicAPI]
         public static readonly DashboardMetric ActiveConnections = new DashboardMetric(
             "pg:connections:active",
-            "Active Connections",
+            "Active connections",
             page => GetMetricByQuery<long>(page, @"SELECT numbackends from pg_stat_database WHERE datname = current_database();"));
 
         [PublicAPI]
         public static readonly DashboardMetric PostgreSqlLocksCount = new DashboardMetric(
             "pg:locks:count",
-            "PostgreSql Locks",
+            "PostgreSQL locks",
             page => GetMetricByQuery<long>(page, @"SELECT COUNT(*) FROM pg_locks;"));
 
         [PublicAPI]
         public static readonly DashboardMetric DistributedLocksCount = new DashboardMetric(
             "app:locks:count",
-            "Distributed Locks",
+            "Application locks",
             page => GetMetricByQuery<long>(page, @"SELECT COUNT(*) FROM lock;"));
 
         [PublicAPI]
         public static readonly DashboardMetric PostgreSqlServerVersion = new DashboardMetric(
             "pg:version",
-            "PostgreSql Version",
+            "PostgreSQL version",
             page => Execute(page, x => new Metric(x.PostgreSqlVersion.ToString()), UndefinedMetric));
 
         [PublicAPI]

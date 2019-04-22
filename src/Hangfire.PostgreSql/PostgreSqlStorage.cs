@@ -103,7 +103,7 @@ namespace Hangfire.PostgreSql
         public override IMonitoringApi GetMonitoringApi() => _monitoringApi;
 
         public override IStorageConnection GetConnection() => _storageConnection;
-
+        
 #pragma warning disable 618 // TODO Remove when Hangfire 2.0 will be released
         public override IEnumerable<IServerComponent> GetComponents()
             => new IServerComponent[]
@@ -126,9 +126,6 @@ namespace Hangfire.PostgreSql
 
         public override string ToString() => _storageInfo;
 
-        public void Dispose()
-        {
-            _connectionProvider.Dispose();
-        }
+        public void Dispose() => _connectionProvider.Dispose();
     }
 }

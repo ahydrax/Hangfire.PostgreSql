@@ -12,7 +12,6 @@ namespace Hangfire.PostgreSql.Tests
         [MemberData(nameof(GetMetrics))]
         public void DashboardMetric_Returns_Value(DashboardMetric dashboardMetric)
         {
-
             var page = new TestPage();
 
             var metric = dashboardMetric.Func(page);
