@@ -11,7 +11,7 @@
     <PackageTags>Hangfire;PostgreSql;Postgres</PackageTags>
     <PackageReleaseNotes>https://github.com/ahydrax/Hangfire.PostgreSql/releases</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/ahydrax/Hangfire.PostgreSql</PackageProjectUrl>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/ahydrax/Hangfire.PostgreSql/master/LICENSE.md</PackageLicenseUrl>
+    <PackageLicense>https://raw.githubusercontent.com/ahydrax/Hangfire.PostgreSql/master/LICENSE.md</PackageLicense>
     <Version>1.6.1.1</Version>
     <FileVersion>1.6.1.1</FileVersion>
     <AssemblyVersion>1.6.1.1</AssemblyVersion>

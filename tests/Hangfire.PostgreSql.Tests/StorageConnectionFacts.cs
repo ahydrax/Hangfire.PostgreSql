@@ -150,7 +150,7 @@ namespace Hangfire.PostgreSql.Tests
                 Assert.Null((int?)sqlJob.stateid);
                 Assert.Null((string)sqlJob.statename);
 
-                var invocationData = JobHelper.FromJson<InvocationData>((string)sqlJob.invocationdata);
+                var invocationData = SerializationHelper.Deserialize<InvocationData>((string)sqlJob.invocationdata);
                 invocationData.Arguments = sqlJob.arguments;
 
                 var job = invocationData.DeserializeJob();
@@ -203,7 +203,7 @@ values (@invocationData, @arguments, @stateName, now() at time zone 'utc') retur
                     arrangeSql,
                     new
                     {
-                        invocationData = JobHelper.ToJson(InvocationData.Serialize(job)),
+                        invocationData = SerializationHelper.Serialize(InvocationData.SerializeJob(job)),
                         stateName = "Succeeded",
                         arguments = "[\"\\\"Arguments\\\"\"]"
                     }).Single().id;
@@ -272,7 +272,7 @@ returning ""id"";";
 
                 var stateId = (int)sql.Query(
                     createStateSql,
-                    new { jobId = jobId, name = "Name", reason = "Reason", @data = JobHelper.ToJson(data) }).Single().id;
+                    new { jobId = jobId, name = "Name", reason = "Reason", @data = SerializationHelper.Serialize(data) }).Single().id;
 
                 sql.Execute(updateJobStateSql, new { jobId = jobId, stateId = stateId });
 
@@ -298,7 +298,7 @@ values (@invocationData, @arguments, @stateName, now() at time zone 'utc') retur
                     arrangeSql,
                     new
                     {
-                        invocationData = JobHelper.ToJson(new InvocationData(null, null, null, null)),
+                        invocationData = SerializationHelper.Serialize(new InvocationData(null, null, null, null)),
                         stateName = "Succeeded",
                         arguments = "['Arguments']"
                     }).Single();
