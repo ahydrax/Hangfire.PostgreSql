@@ -110,7 +110,7 @@ AND queue = @queue
                     Name = server.Id,
                     Heartbeat = server.LastHeartbeat,
                     Queues = data.Queues,
-                    StartedAt = data.StartedAt ?? DateTime.MinValue,
+                    StartedAt = data.StartedAt,
                     WorkersCount = data.WorkerCount
                 });
             }

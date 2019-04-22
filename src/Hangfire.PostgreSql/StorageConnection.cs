@@ -296,7 +296,7 @@ WHERE key = @key
             {
                 WorkerCount = context.WorkerCount,
                 Queues = context.Queues,
-                StartedAt = DateTime.UtcNow,
+                StartedAt = DateTime.UtcNow
             };
 
             const string query = @"
