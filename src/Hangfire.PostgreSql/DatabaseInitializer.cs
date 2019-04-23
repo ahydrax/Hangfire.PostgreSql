@@ -47,6 +47,7 @@ namespace Hangfire.PostgreSql
                     {
                         connection.Execute(migration.Script, transaction: transaction);
                         lastMigration = migration;
+                        Log.Info($"Installing Hangfire SQL migration #{migration.Version}");
                     }
 
                     connection.Execute(

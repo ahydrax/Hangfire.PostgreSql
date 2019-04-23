@@ -223,9 +223,7 @@ DO UPDATE SET ""value"" = @value
         public override string GetFirstByLowestScoreFromSet(string key, double fromScore, double toScore)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-            if (toScore < fromScore)
-                throw new ArgumentException("The `toScore` value must be higher or equal to the `fromScore` value.");
-
+            if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be higher or equal to the `fromScore` value.");
 
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
@@ -238,6 +236,25 @@ ORDER BY ""score"" LIMIT 1;
 ";
                 return connectionHolder.Connection.Query<string>(query, new { key, from = fromScore, to = toScore })
                     .SingleOrDefault();
+            }
+        }
+
+        public override List<string> GetFirstByLowestScoreFromSet(string key, double fromScore, double toScore, int count)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be higher or equal to the `fromScore` value.");
+            if (count < 1) throw new ArgumentException("The `count` must be equal or greater than 1.");
+
+            using (var connectionHolder = _connectionProvider.AcquireConnection())
+            {
+                var query = $@"
+SELECT ""value"" 
+FROM ""set"" 
+WHERE ""key"" = @key 
+AND ""score"" BETWEEN @from AND @to 
+ORDER BY ""score"" LIMIT {count};";
+
+                return connectionHolder.Connection.Query<string>(query, new { key, from = fromScore, to = toScore }).ToList();
             }
         }
 

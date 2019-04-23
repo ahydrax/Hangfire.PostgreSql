@@ -27,6 +27,7 @@ namespace Hangfire.PostgreSql
         public IFetchedJob Dequeue(string[] queues, CancellationToken cancellationToken)
         {
             Guard.ThrowIfCollectionIsNullOrEmpty(queues, nameof(queues));
+            cancellationToken.ThrowIfCancellationRequested();
 
             var queuesList = string.Join(",", queues.Select(x => $"'{x}'"));
             var queuesOrder = string.Join(",", queues.Select(x => $@"queue='{x}'"));
@@ -60,8 +61,8 @@ RETURNING jobqueue.id AS Id, jobid AS JobId, queue AS Queue, fetchedat AS Fetche
 
                 if (fetchedJobDto == null)
                 {
-                    cancellationToken.WaitHandle.WaitOne(_options.QueuePollInterval);
                     cancellationToken.ThrowIfCancellationRequested();
+                    cancellationToken.WaitHandle.WaitOne(_options.QueuePollInterval);
                 }
 
             } while (fetchedJobDto == null);
@@ -73,7 +74,7 @@ RETURNING jobqueue.id AS Id, jobid AS JobId, queue AS Queue, fetchedat AS Fetche
                 fetchedJobDto.Queue);
         }
 
-        public void Enqueue(string queue, string jobId)
+        public void Enqueue(string queue, long jobId)
         {
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
@@ -81,7 +82,7 @@ RETURNING jobqueue.id AS Id, jobid AS JobId, queue AS Queue, fetchedat AS Fetche
 INSERT INTO jobqueue (jobid, queue) 
 VALUES (@jobId, @queue)
 ";
-                var parameters = new { jobId = Convert.ToInt32(jobId, CultureInfo.InvariantCulture), queue = queue };
+                var parameters = new { jobId = jobId, queue = queue };
                 connectionHolder.Connection.Execute(query, parameters);
             }
         }

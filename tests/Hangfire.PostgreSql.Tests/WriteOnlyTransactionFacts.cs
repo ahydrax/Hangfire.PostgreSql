@@ -163,7 +163,7 @@ returning ""id""";
             {
                 Commit(provider, x => x.AddToQueue("default", "1"));
 
-                _queue.Verify(x => x.Enqueue("default", "1"));
+                _queue.Verify(x => x.Enqueue("default", 1));
             });
         }
 

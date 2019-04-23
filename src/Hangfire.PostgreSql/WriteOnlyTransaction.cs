@@ -114,7 +114,7 @@ VALUES (@jobId, @name, @reason, @createdAt, @data);
                 }, trx));
         }
 
-        public override void AddToQueue(string queue, string jobId) => _queue.Enqueue(queue, jobId);
+        public override void AddToQueue(string queue, string jobId) => _queue.Enqueue(queue, Convert.ToInt64(jobId, CultureInfo.InvariantCulture));
 
         public override void IncrementCounter(string key)
         {
