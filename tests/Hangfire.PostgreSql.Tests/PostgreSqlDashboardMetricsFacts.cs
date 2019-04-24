@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Hangfire.Annotations;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql.Tests.Utils;
@@ -36,13 +39,23 @@ namespace Hangfire.PostgreSql.Tests
             {
                 var connectionString = ConnectionUtils.GetConnectionString();
                 var storage = new PostgreSqlStorage(connectionString, new PostgreSqlStorageOptions { PrepareSchemaIfNecessary = false });
+                
+                var method = GetType().GetMethod("Assign", BindingFlags.NonPublic | BindingFlags.Instance);
 
-                var context = (DashboardContext)GetType().GetProperty("Context", typeof(DashboardContext)).GetValue(this);
-
-                typeof(DashboardContext).GetProperty("Storage", typeof(JobStorage)).SetValue(context, storage);
+                var context = new TestContext(storage, new DashboardOptions());
+                method.Invoke(this, new object[] { context });
             }
 
             public override void Execute() { }
+        }
+
+        private class TestContext : DashboardContext
+        {
+            public TestContext([NotNull] JobStorage storage, [NotNull] DashboardOptions options)
+                : base(storage, options)
+            {
+
+            }
         }
     }
 }

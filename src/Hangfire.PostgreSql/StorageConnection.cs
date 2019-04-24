@@ -346,9 +346,7 @@ DO UPDATE SET data = @data, lastheartbeat = NOW() AT TIME ZONE 'UTC'
             const string query = @"
 UPDATE server 
 SET lastheartbeat = NOW() AT TIME ZONE 'UTC' 
-WHERE id = @id
-ON CONFLICT (id)
-DO UPDATE SET lastheartbeat = NOW() AT TIME ZONE 'UTC';
+WHERE id = @id;
 ";
 
             using (var connectionHolder = _connectionProvider.AcquireConnection())
