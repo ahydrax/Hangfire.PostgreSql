@@ -39,8 +39,8 @@ namespace Hangfire.PostgreSql.Tests
             {
                 var connectionString = ConnectionUtils.GetConnectionString();
                 var storage = new PostgreSqlStorage(connectionString, new PostgreSqlStorageOptions { PrepareSchemaIfNecessary = false });
-                
-                var method = GetType().GetMethod("Assign", BindingFlags.NonPublic | BindingFlags.Instance);
+
+                var method = GetType().GetMethod(nameof(TestPage.Assign), BindingFlags.NonPublic | BindingFlags.Instance);
 
                 var context = new TestContext(storage, new DashboardOptions());
                 method.Invoke(this, new object[] { context });
