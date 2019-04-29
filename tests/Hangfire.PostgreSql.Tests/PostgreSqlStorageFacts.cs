@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Hangfire.PostgreSql.Maintenance;
+using Hangfire.PostgreSql.Storage;
 using Hangfire.PostgreSql.Tests.Utils;
 using Xunit;
 

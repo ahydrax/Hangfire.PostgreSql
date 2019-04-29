@@ -25,7 +25,7 @@ namespace Hangfire.PostgreSql
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ThrowIfNullOrEmpty([NotNull] string argument, [NotNull] string argumentName)
         {
-            if (string.IsNullOrEmpty(argument))
+            if (string.IsNullOrWhiteSpace(argument))
                 throw new ArgumentNullException(argumentName);
         }
 

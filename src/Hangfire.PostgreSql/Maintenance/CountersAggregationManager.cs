@@ -2,6 +2,7 @@
 using System.Data;
 using System.Threading;
 using Dapper;
+using Hangfire.Common;
 using Hangfire.Logging;
 using Hangfire.PostgreSql.Connectivity;
 using Hangfire.Server;
@@ -37,17 +38,14 @@ namespace Hangfire.PostgreSql.Maintenance
             _checkInterval = checkInterval;
         }
 
-        public override string ToString() => "PostgreSql Counters Aggregation Manager";
+        public override string ToString() => "PostgreSQL Counters Aggregation Manager";
 
-        public void Execute(BackgroundProcessContext context)
-        {
-            Execute(context.StoppingToken);
-        }
+        public void Execute(BackgroundProcessContext context) => Execute(context.StoppingToken);
 
         public void Execute(CancellationToken cancellationToken)
         {
             AggregateCounters(cancellationToken);
-            cancellationToken.WaitHandle.WaitOne(_checkInterval);
+            cancellationToken.Wait(_checkInterval);
         }
 
         private void AggregateCounters(CancellationToken cancellationToken)
@@ -82,7 +80,7 @@ SELECT SUM(value) FROM counters;
                 if (aggregatedValue > 0)
                 {
                     const string query = @"INSERT INTO counter (key, value) VALUES (@key, @value);";
-                    connectionHolder.Connection.Execute(query, new { key = counterName, value = aggregatedValue });
+                    connectionHolder.Execute(query, new { key = counterName, value = aggregatedValue });
                 }
                 Logger.InfoFormat("Aggregated counter \'{0}\', value: {1}", counterName, aggregatedValue);
             }

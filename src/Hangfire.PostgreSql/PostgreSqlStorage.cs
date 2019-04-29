@@ -4,6 +4,7 @@ using Hangfire.Annotations;
 using Hangfire.Logging;
 using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Maintenance;
+using Hangfire.PostgreSql.Storage;
 using Hangfire.Server;
 using Hangfire.Storage;
 

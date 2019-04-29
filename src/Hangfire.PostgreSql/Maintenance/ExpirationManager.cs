@@ -3,6 +3,7 @@ using System.Data;
 using System.Globalization;
 using System.Threading;
 using Dapper;
+using Hangfire.Common;
 using Hangfire.Logging;
 using Hangfire.PostgreSql.Connectivity;
 using Hangfire.Server;
@@ -37,11 +38,14 @@ namespace Hangfire.PostgreSql.Maintenance
 
         public ExpirationManager(IConnectionProvider connectionProvider, TimeSpan checkInterval)
         {
-            _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+            Guard.ThrowIfNull(connectionProvider, nameof(connectionProvider));
+            Guard.ThrowIfValueIsNotPositive(checkInterval, nameof(checkInterval));
+
+            _connectionProvider = connectionProvider;
             _checkInterval = checkInterval;
         }
 
-        public override string ToString() => "PostgreSql Expiration Manager";
+        public override string ToString() => "PostgreSQL Expiration Manager";
 
         public void Execute(BackgroundProcessContext context) => Execute(context.StoppingToken);
 
@@ -57,7 +61,8 @@ namespace Hangfire.PostgreSql.Maintenance
                     using (var connectionHolder = _connectionProvider.AcquireConnection())
                     using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.ReadCommitted))
                     {
-                        // Pgsql doesn't support parameters for table names that's why you're going this 'awful' sql query interpolation
+                        // Pgsql doesn't support parameters for table names
+                        // that's why you're going this 'awful' sql query interpolation
                         var query = $@"
 DELETE FROM {table}
 WHERE id IN (
@@ -66,7 +71,7 @@ WHERE id IN (
     WHERE expireat < NOW() AT TIME ZONE 'UTC' 
     LIMIT {Convert.ToString(NumberOfRecordsInSinglePass, CultureInfo.InvariantCulture)}
 )";
-                        removedCount = connectionHolder.Connection.Execute(query, transaction: transaction);
+                        removedCount = connectionHolder.Execute(query, transaction: transaction);
                         transaction.Commit();
                     }
 
@@ -74,13 +79,13 @@ WHERE id IN (
                     {
                         Logger.InfoFormat("Removed {0} outdated record(s) from '{1}' table.", removedCount, table);
 
-                        cancellationToken.WaitHandle.WaitOne(DelayBetweenPasses);
+                        cancellationToken.Wait(DelayBetweenPasses);
                         cancellationToken.ThrowIfCancellationRequested();
                     }
                 } while (removedCount != 0);
             }
-            cancellationToken.WaitHandle.WaitOne(_checkInterval);
-            cancellationToken.ThrowIfCancellationRequested();
+
+            cancellationToken.Wait(_checkInterval);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using Hangfire.Logging;
 using Hangfire.PostgreSql.Tests.Integration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -28,6 +29,7 @@ namespace Hangfire.PostgreSql.Tests.Web
             services.AddMvc();
             services.AddHangfire(configuration =>
             {
+                configuration.UseColouredConsoleLogProvider(LogLevel.Debug);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.ActiveConnections);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.CacheHitsPerRead);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.ConnectionUsageRatio);
@@ -46,14 +48,14 @@ namespace Hangfire.PostgreSql.Tests.Web
             app.UseHangfireServer(new BackgroundJobServerOptions
             {
                 ServerCheckInterval = TimeSpan.FromSeconds(2),
-                HeartbeatInterval = TimeSpan.FromMilliseconds(500),
+                HeartbeatInterval = TimeSpan.FromSeconds(1),
                 ServerTimeout = TimeSpan.FromSeconds(2),
                 ServerName = "Server default"
             });
             app.UseHangfireServer(new BackgroundJobServerOptions
             {
                 ServerCheckInterval = TimeSpan.FromSeconds(2),
-                HeartbeatInterval = TimeSpan.FromMilliseconds(500),
+                HeartbeatInterval = TimeSpan.FromSeconds(1),
                 ServerTimeout = TimeSpan.FromSeconds(2),
                 ServerName = "Server Q1",
                 Queues = new[] { "queue1" }
@@ -61,7 +63,7 @@ namespace Hangfire.PostgreSql.Tests.Web
             app.UseHangfireServer(new BackgroundJobServerOptions
             {
                 ServerCheckInterval = TimeSpan.FromSeconds(2),
-                HeartbeatInterval = TimeSpan.FromMilliseconds(500),
+                HeartbeatInterval = TimeSpan.FromSeconds(1),
                 ServerTimeout = TimeSpan.FromSeconds(2),
                 ServerName = "Server Q2",
                 Queues = new[] { "queue2" }
