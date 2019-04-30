@@ -57,11 +57,9 @@ RETURNING id;
 ";
             var invocationData = InvocationData.SerializeJob(job);
 
-            int jobId;
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
-                var connection = connectionHolder.Connection;
-                jobId = connection.Query<int>(
+                var jobId = connectionHolder.FetchFirstOrDefault<int>(
                     createJobSql,
                     new
                     {
@@ -69,52 +67,44 @@ RETURNING id;
                         arguments = invocationData.Arguments,
                         createdAt = createdAt,
                         expireAt = createdAt.Add(expireIn)
-                    }).Single();
-            }
+                    });
 
-            if (parameters.Count > 0)
-            {
-                var parameterArray = new object[parameters.Count];
-                var parameterIndex = 0;
-                foreach (var parameter in parameters)
+                if (parameters.Count > 0)
                 {
-                    parameterArray[parameterIndex++] = new
+                    var parameterArray = new object[parameters.Count];
+                    var parameterIndex = 0;
+                    foreach (var parameter in parameters)
                     {
-                        jobId = jobId,
-                        name = parameter.Key,
-                        value = parameter.Value
-                    };
-                }
+                        parameterArray[parameterIndex++] = new
+                        {
+                            jobId = jobId,
+                            name = parameter.Key,
+                            value = parameter.Value
+                        };
+                    }
 
-                const string insertParameterSql = @"
+                    const string insertParameterSql = @"
 INSERT INTO jobparameter (jobid, name, value)
 VALUES (@jobId, @name, @value);
 ";
-                using (var connectionHolder = _connectionProvider.AcquireConnection())
-                {
                     connectionHolder.Connection.Execute(insertParameterSql, parameterArray);
+
                 }
+                return jobId.ToString(CultureInfo.InvariantCulture);
             }
-            return jobId.ToString(CultureInfo.InvariantCulture);
         }
 
-        public override JobData GetJobData(string jobId)
+        public override JobData GetJobData(string jobIdString)
         {
-            Guard.ThrowIfNull(jobId, nameof(jobId));
+            Guard.ThrowIfNull(jobIdString, nameof(jobIdString));
+            var jobId = Convert.ToInt32(jobIdString, CultureInfo.InvariantCulture);
 
             const string sql = @"
 SELECT ""invocationdata"" ""invocationData"", ""statename"" ""stateName"", ""arguments"", ""createdat"" ""createdAt"" 
 FROM job 
 WHERE ""id"" = @id;
 ";
-
-            SqlJob jobData;
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                jobData = connectionHolder.Connection
-                    .Query<SqlJob>(sql, new { id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture) })
-                    .SingleOrDefault();
-            }
+            var jobData = _connectionProvider.FetchFirstOrDefault<SqlJob>(sql, new { id = jobId });
 
             if (jobData == null) return null;
 
@@ -143,9 +133,9 @@ WHERE ""id"" = @id;
             };
         }
 
-        public override StateData GetStateData(string jobId)
+        public override StateData GetStateData(string jobIdString)
         {
-            Guard.ThrowIfNull(jobId, nameof(jobId));
+            Guard.ThrowIfNull(jobIdString, nameof(jobIdString));
 
             const string query = @"
 SELECT s.name ""Name"", s.reason ""Reason"", s.data ""Data""
@@ -158,7 +148,7 @@ WHERE j.id = @jobId;
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
                 sqlState = connectionHolder.Connection
-                    .Query<SqlState>(query, new { jobId = Convert.ToInt32(jobId, CultureInfo.InvariantCulture) })
+                    .Query<SqlState>(query, new { jobId = Convert.ToInt32(jobIdString, CultureInfo.InvariantCulture) })
                     .SingleOrDefault();
             }
 
@@ -196,28 +186,17 @@ DO UPDATE SET value = @value
             Guard.ThrowIfNull(id, nameof(id));
             Guard.ThrowIfNull(name, nameof(name));
 
-            const string query = @"SELECT value FROM jobparameter WHERE jobid = @id AND name = @name;";
-
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                var parameters = new { id = Convert.ToInt32(id, CultureInfo.InvariantCulture), name = name };
-                return connectionHolder.Connection.Query<string>(query, parameters).SingleOrDefault();
-            }
+            var jobId = Convert.ToInt32(id, CultureInfo.InvariantCulture);
+            const string query = @"SELECT value FROM jobparameter WHERE jobid = @id AND name = @name LIMIT 1;";
+            return _connectionProvider.FetchFirstOrDefault<string>(query, new { id = jobId, name = name });
         }
 
         public override long GetCounter(string key)
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"select sum(""value"") as ""Value"" from ""counter"" where ""key"" = @key";
-
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                return connectionHolder.Connection.Query<long?>(query, new { key }).SingleOrDefault() ?? 0;
-            }
+            const string query = @"select sum(value) from counter where key = @key";
+            return _connectionProvider.FetchFirstOrDefault<long?>(query, new { key }) ?? 0;
         }
-
-
-
     }
 }

@@ -80,7 +80,7 @@ SELECT SUM(value) FROM counters;
                 if (aggregatedValue > 0)
                 {
                     const string query = @"INSERT INTO counter (key, value) VALUES (@key, @value);";
-                    connectionHolder.Execute(query, new { key = counterName, value = aggregatedValue });
+                    connectionHolder.Connection.Execute(query, new { key = counterName, value = aggregatedValue });
                 }
                 Logger.InfoFormat("Aggregated counter \'{0}\', value: {1}", counterName, aggregatedValue);
             }

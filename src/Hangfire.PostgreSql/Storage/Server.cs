@@ -28,10 +28,12 @@ ON CONFLICT (id)
 DO UPDATE SET data = @data, lastheartbeat = @heartbeat
 ";
 
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
+            _connectionProvider.Execute(query, new
             {
-                connectionHolder.Execute(query, new { id = serverId, data = SerializationHelper.Serialize(data), heartbeat = DateTime.UtcNow });
-            }
+                id = serverId,
+                data = SerializationHelper.Serialize(data),
+                heartbeat = DateTime.UtcNow
+            });
         }
 
         public override void Heartbeat(string serverId)
@@ -39,10 +41,11 @@ DO UPDATE SET data = @data, lastheartbeat = @heartbeat
             Guard.ThrowIfNull(serverId, nameof(serverId));
 
             const string query = @"UPDATE server SET lastheartbeat = @heartbeat WHERE id = @id;";
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
+            _connectionProvider.Execute(query, new
             {
-                connectionHolder.Execute(query, new { id = serverId, heartbeat = DateTime.UtcNow });
-            }
+                id = serverId,
+                heartbeat = DateTime.UtcNow
+            });
         }
 
         public override void RemoveServer(string serverId)
@@ -50,10 +53,7 @@ DO UPDATE SET data = @data, lastheartbeat = @heartbeat
             Guard.ThrowIfNull(serverId, nameof(serverId));
 
             const string query = @"DELETE FROM server WHERE id = @id;";
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                connectionHolder.Execute(query, new { id = serverId });
-            }
+            _connectionProvider.Execute(query, new { id = serverId });
         }
 
         public override int RemoveTimedOutServers(TimeSpan timeOut)
@@ -61,10 +61,7 @@ DO UPDATE SET data = @data, lastheartbeat = @heartbeat
             Guard.ThrowIfValueIsNotPositive(timeOut, nameof(timeOut));
 
             const string query = @"DELETE FROM server WHERE lastheartbeat < @timeoutDate;";
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                return connectionHolder.Execute(query, new { timeoutDate = DateTime.UtcNow - timeOut });
-            }
+            return _connectionProvider.Execute(query, new { timeoutDate = DateTime.UtcNow - timeOut });
         }
     }
 }

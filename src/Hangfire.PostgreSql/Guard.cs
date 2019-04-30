@@ -48,7 +48,7 @@ namespace Hangfire.PostgreSql
             if (connectionStringBuilder.Host == null) throw new ArgumentException(HostHasNotFoundExceptionMessage);
             if (connectionStringBuilder.SearchPath == null) throw new ArgumentException(SearchPathIsNotSpecified);
         }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ThrowIfValueIsNotPositive(TimeSpan value, [NotNull] string fieldName)
         {

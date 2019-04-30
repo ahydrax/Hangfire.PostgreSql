@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using Dapper;
+using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Entities;
 using Hangfire.Storage;
 
@@ -10,10 +11,9 @@ namespace Hangfire.PostgreSql.Storage
 {
     internal sealed partial class StorageConnection : JobStorageConnection
     {
-        
         public override Dictionary<string, string> GetAllEntriesFromHash(string key)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
+            Guard.ThrowIfNull(key, nameof(key));
 
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.ReadCommitted))
@@ -33,53 +33,42 @@ WHERE key = @key
                 return result.Count != 0 ? result : null;
             }
         }
-        
+
         public override long GetHashCount(string key)
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"select count(""id"") from ""hash"" where ""key"" = @key";
+            const string query = @"select count(id) from hash where key = @key";
 
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                return connectionHolder.Connection.Query<long>(query, new { key }).SingleOrDefault();
-            }
+            return _connectionProvider.FetchFirstOrDefault<long>(query, new { key });
         }
 
         public override TimeSpan GetHashTtl(string key)
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"select min(""expireat"") from ""hash"" where ""key"" = @key";
+            const string query = @"select min(expireat) from hash where key = @key";
 
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                var result = connectionHolder.Connection.Query<DateTime?>(query, new { key }).Single();
-                if (!result.HasValue) return TimeSpan.FromSeconds(-1);
+            var result = _connectionProvider.FetchFirstOrDefault<DateTime?>(query, new { key });
+            if (!result.HasValue) return TimeSpan.FromSeconds(-1);
 
-                return result.Value - DateTime.UtcNow;
-            }
+            return result.Value - DateTime.UtcNow;
         }
-        
 
         public override string GetValueFromHash(string key, string name)
         {
             Guard.ThrowIfNull(key, nameof(key));
             Guard.ThrowIfNull(name, nameof(name));
 
-            const string query = @"select ""value"" from ""hash"" where ""key"" = @key and ""field"" = @field";
+            const string query = @"select value from hash where key = @key and field = @field";
 
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                return connectionHolder.Connection.Query<string>(query, new { key, field = name }).SingleOrDefault();
-            }
+            return _connectionProvider.FetchFirstOrDefault<string>(query, new { key, field = name });
         }
 
-        
         public override void SetRangeInHash(string key, IEnumerable<KeyValuePair<string, string>> keyValuePairs)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
-            if (keyValuePairs == null) throw new ArgumentNullException(nameof(keyValuePairs));
+            Guard.ThrowIfNull(key, nameof(key));
+            Guard.ThrowIfNull(keyValuePairs, nameof(keyValuePairs));
 
             const string query = @"
 INSERT INTO hash(key, field, value)
@@ -98,6 +87,5 @@ DO UPDATE SET value = @value
                 }
             }
         }
-
     }
 }

@@ -31,18 +31,11 @@ namespace Hangfire.PostgreSql.Maintenance
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                const string query = @"
+            const string query = @"
 DELETE FROM lock
 WHERE acquired < current_timestamp at time zone 'UTC' - @timeout";
 
-                var parameters = new
-                {
-                    timeout = _lockTimeOut
-                };
-                connectionHolder.Execute(query, parameters);
-            }
+            _connectionProvider.Execute(query, new { timeout = _lockTimeOut });
 
             cancellationToken.Wait(_lockTimeOut);
         }
