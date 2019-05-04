@@ -1,8 +1,10 @@
 using System;
+using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
 using Dapper;
+using Hangfire.Common;
 using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Entities;
 using Hangfire.Storage;
@@ -39,7 +41,7 @@ WHERE jobqueue.id = (
     SELECT id
     FROM jobqueue
     WHERE queue IN ({queuesList})
-    AND (fetchedat IS NULL OR fetchedat < NOW() AT TIME ZONE 'UTC' - @timeout)
+    AND (fetchedat IS NULL OR fetchedat < @timeout)
     ORDER BY ({queuesOrder}) DESC
     LIMIT 1
     FOR UPDATE SKIP LOCKED)
@@ -51,18 +53,14 @@ RETURNING jobqueue.id AS Id, jobid AS JobId, queue AS Queue, fetchedat AS Fetche
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                using (var connectionHolder = _connectionProvider.AcquireConnection())
-                {
-                    fetchedJobDto = connectionHolder.Connection.Query<FetchedJobDto>(
-                            fetchJobSqlTemplate,
-                            new { queues = queues, timeout = _options.InvisibilityTimeout })
-                        .SingleOrDefault();
-                }
+                fetchedJobDto = _connectionProvider.FetchFirstOrDefault<FetchedJobDto>(
+                    fetchJobSqlTemplate,
+                    new { timeout = DateTime.UtcNow - _options.InvisibilityTimeout });
 
                 if (fetchedJobDto == null)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    cancellationToken.WaitHandle.WaitOne(_options.QueuePollInterval);
+                    cancellationToken.Wait(_options.QueuePollInterval);
                 }
 
             } while (fetchedJobDto == null);
@@ -76,15 +74,12 @@ RETURNING jobqueue.id AS Id, jobid AS JobId, queue AS Queue, fetchedat AS Fetche
 
         public void Enqueue(string queue, long jobId)
         {
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                const string query = @"
+            const string query = @"
 INSERT INTO jobqueue (jobid, queue) 
 VALUES (@jobId, @queue)
 ";
-                var parameters = new { jobId = jobId, queue = queue };
-                connectionHolder.Connection.Execute(query, parameters);
-            }
+            var parameters = new { jobId = jobId, queue = queue };
+            _connectionProvider.Execute(query, parameters);
         }
     }
 }
