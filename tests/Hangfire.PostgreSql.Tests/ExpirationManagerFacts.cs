@@ -211,6 +211,6 @@ values ('key', 1, now() at time zone 'utc' - interval '{0} seconds') returning "
 
         private static string GetSchemaName() => ConnectionUtils.GetSchemaName();
 
-        private static ExpirationManager CreateManager() => new ExpirationManager(ConnectionUtils.GetConnectionProvider(), TimeSpan.Zero);
+        private static ExpirationManager CreateManager() => new ExpirationManager(ConnectionUtils.GetConnectionProvider(), TimeSpan.FromMilliseconds(1));
     }
 }
