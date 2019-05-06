@@ -31,18 +31,15 @@ namespace Hangfire.PostgreSql
             Guard.ThrowIfCollectionIsNullOrEmpty(queues, nameof(queues));
             cancellationToken.ThrowIfCancellationRequested();
 
-            var queuesList = string.Join(",", queues.Select(x => $"'{x}'"));
-            var queuesOrder = string.Join(",", queues.Select(x => $@"queue='{x}'"));
-
-            var fetchJobSqlTemplate = $@"
+            const string fetchJobSqlTemplate = @"
 UPDATE jobqueue AS jobqueue
-SET fetchedat = NOW() AT TIME ZONE 'UTC'
+SET fetchedat = @now
 WHERE jobqueue.id = (
     SELECT id
     FROM jobqueue
-    WHERE queue IN ({queuesList})
+    WHERE queue IN @queues
     AND (fetchedat IS NULL OR fetchedat < @timeout)
-    ORDER BY ({queuesOrder}) DESC
+    ORDER BY jobqueue.id DESC
     LIMIT 1
     FOR UPDATE SKIP LOCKED)
 RETURNING jobqueue.id AS Id, jobid AS JobId, queue AS Queue, fetchedat AS FetchedAt;
@@ -51,11 +48,13 @@ RETURNING jobqueue.id AS Id, jobid AS JobId, queue AS Queue, fetchedat AS Fetche
             FetchedJobDto fetchedJobDto;
             do
             {
+                var now = DateTime.UtcNow;
+
                 cancellationToken.ThrowIfCancellationRequested();
 
                 fetchedJobDto = _connectionProvider.FetchFirstOrDefault<FetchedJobDto>(
                     fetchJobSqlTemplate,
-                    new { timeout = DateTime.UtcNow - _options.InvisibilityTimeout });
+                    new { fetchedat = now, timeout = now - _options.InvisibilityTimeout, queues = queues });
 
                 if (fetchedJobDto == null)
                 {
