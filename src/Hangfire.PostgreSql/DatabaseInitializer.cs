@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -40,27 +41,32 @@ namespace Hangfire.PostgreSql
                 var availableMigrations = GetMigrations().Where(x => x.Version > installedVersion).ToArray();
                 if (availableMigrations.Length == 0) return;
 
-                using (var transaction = connection.BeginTransaction(IsolationLevel.Serializable))
+                using (var transactionHolder = connectionHolder.BeginTransaction(IsolationLevel.Serializable))
                 {
-                    var lastMigration = default(MigrationInfo);
-                    foreach (var migration in availableMigrations)
-                    {
-                        connection.Execute(migration.Script, transaction: transaction);
-                        lastMigration = migration;
-                    }
-
-                    connection.Execute(
-                        @"UPDATE schema SET version = @version",
-                        new { version = lastMigration.Version },
-                        transaction);
-
-                    transaction.Commit();
+                    MigrateSchema(connection, transactionHolder.Transaction, availableMigrations);
+                    transactionHolder.Commit();
                 }
 
                 UnlockDatabase(connection);
             }
 
             Log.Info("Hangfire SQL objects installed.");
+        }
+
+        private void MigrateSchema(NpgsqlConnection connection, NpgsqlTransaction transaction,
+            MigrationInfo[] availableMigrations)
+        {
+            var lastMigration = default(MigrationInfo);
+            foreach (var migration in availableMigrations)
+            {
+                connection.Execute(migration.Script, transaction: transaction);
+                lastMigration = migration;
+            }
+
+            connection.Execute(
+                @"UPDATE schema SET version = @version",
+                new { version = lastMigration.Version },
+                transaction);
         }
 
         private static bool LockDatabase(NpgsqlConnection connection)

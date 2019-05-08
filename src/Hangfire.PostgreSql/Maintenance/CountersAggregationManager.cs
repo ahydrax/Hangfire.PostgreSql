@@ -63,7 +63,7 @@ namespace Hangfire.PostgreSql.Maintenance
         private void AggregateCounter(string counterName)
         {
             using (var connectionHolder = _connectionProvider.AcquireConnection())
-            using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.ReadCommitted))
+            using (var transactionHolder = connectionHolder.BeginTransaction(IsolationLevel.ReadCommitted))
             {
                 const string aggregateQuery = @"
 WITH counters AS (
@@ -76,8 +76,8 @@ RETURNING *
 SELECT SUM(value) FROM counters;
 ";
 
-                var aggregatedValue = connectionHolder.Connection.ExecuteScalar<long>(aggregateQuery, new { counterName }, transaction);
-                transaction.Commit();
+                var aggregatedValue = connectionHolder.Connection.ExecuteScalar<long>(aggregateQuery, new { counterName }, transactionHolder.Transaction);
+                transactionHolder.Commit();
 
                 if (aggregatedValue > 0)
                 {

@@ -1,4 +1,5 @@
-﻿
+﻿using System.Data;
+
 namespace Hangfire.PostgreSql.Connectivity
 {
     internal sealed class NpgsqlConnectionProvider : IConnectionProvider

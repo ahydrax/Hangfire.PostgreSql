@@ -55,7 +55,7 @@ namespace Hangfire.PostgreSql.Maintenance
                 do
                 {
                     using (var connectionHolder = _connectionProvider.AcquireConnection())
-                    using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.ReadCommitted))
+                    using (var transactionHolder = connectionHolder.BeginTransaction(IsolationLevel.ReadCommitted))
                     {
                         // Pgsql doesn't support parameters for table names that's why you're going this 'awful' sql query interpolation
                         var query = $@"
@@ -63,11 +63,11 @@ DELETE FROM {table}
 WHERE id IN (
     SELECT id
     FROM {table}
-    WHERE expireat < NOW() AT TIME ZONE 'UTC' 
+    WHERE expireat < NOW() AT TIME ZONE 'UTC'
     LIMIT {Convert.ToString(NumberOfRecordsInSinglePass, CultureInfo.InvariantCulture)}
 )";
-                        removedCount = connectionHolder.Connection.Execute(query, transaction: transaction);
-                        transaction.Commit();
+                        removedCount = connectionHolder.Connection.Execute(query, transaction: transactionHolder.Transaction);
+                        transactionHolder.Commit();
                     }
 
                     if (removedCount > 0)
