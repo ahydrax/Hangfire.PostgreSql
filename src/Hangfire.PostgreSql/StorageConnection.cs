@@ -277,7 +277,7 @@ SELECT field AS Field, value AS Value
 FROM hash
 WHERE key = @key
 ;";
-                var result = transactionHolder.Transaction.Connection.Query<SqlHash>(
+                var result = connectionHolder.Connection.Query<SqlHash>(
                         query,
                         new { key = key },
                         transactionHolder.Transaction)

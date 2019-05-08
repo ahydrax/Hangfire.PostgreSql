@@ -6,15 +6,18 @@ namespace Hangfire.PostgreSql.Connectivity
 {
     public class TransactionHolder : ITransactionHolder
     {
+        private readonly NpgsqlConnection _connection;
         private readonly NpgsqlTransaction _transaction;
         private readonly Action<TransactionHolder> _transactionDisposer;
         private readonly bool _commitable;
 
-        public TransactionHolder(NpgsqlTransaction transaction, bool commitable,
+        public TransactionHolder(NpgsqlTransaction transaction,
+            bool commitable,
             Action<TransactionHolder> transactionDisposer)
         {
             _transaction = transaction;
             _transactionDisposer = transactionDisposer;
+            _connection = connection;
             _commitable = commitable;
         }
 

@@ -52,7 +52,7 @@ namespace Hangfire.PostgreSql.Connectivity
             }
 
             var transaction = _connection.BeginTransaction(level);
-            return new TransactionHolder(transaction, true, holder => holder.Transaction.Dispose());
+            return new TransactionHolder(transaction, true, holder => transaction.Dispose());
         }
 
         public bool Disposed { get; private set; }
