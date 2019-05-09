@@ -13,7 +13,7 @@ namespace Hangfire.PostgreSql
 
         public FetchedJob(
             IConnectionProvider connectionProvider,
-            int id,
+            long id,
             string jobId,
             string queue)
         {
@@ -27,7 +27,7 @@ namespace Hangfire.PostgreSql
             Queue = queue;
         }
 
-        public int Id { get; }
+        public long Id { get; }
         public string JobId { get; }
         public string Queue { get; }
 

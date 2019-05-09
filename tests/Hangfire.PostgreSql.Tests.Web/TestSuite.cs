@@ -88,8 +88,8 @@ namespace Hangfire.PostgreSql.Tests.Web
         {
             var bjc = new BackgroundJobClient(JobStorage.Current);
 
-            const int tasks = 5000;
-            Parallel.For(0, tasks, new ParallelOptions { MaxDegreeOfParallelism = 10 }, i =>
+            const int tasks = 50000;
+            Parallel.For(0, tasks, new ParallelOptions { MaxDegreeOfParallelism = 50 }, i =>
              {
                  bjc.Enqueue(() => ContinuationPartC());
              });

@@ -6,7 +6,7 @@ namespace Hangfire.PostgreSql.Entities
     [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
     internal class SqlHash
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Key { get; set; }
         public string Field { get; set; }
         public string Value { get; set; }

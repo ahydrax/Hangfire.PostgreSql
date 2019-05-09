@@ -164,7 +164,7 @@ namespace Hangfire.PostgreSql.Tests
 
                 var parameters = sql.Query(
                         @"select * from """ + GetSchemaName() + @""".""jobparameter"" where ""jobid"" = @id",
-                        new { id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture) })
+                        new { id = JobId.ToLong(jobId) })
                     .ToDictionary(x => (string)x.name, x => (string)x.value);
 
                 Assert.Equal("Value1", parameters["Key1"]);
@@ -351,7 +351,7 @@ values ('', '', now() at time zone 'utc') returning ""id""";
                 var parameter = sql.Query(
                     @"select * from """ + GetSchemaName() +
                     @""".""jobparameter"" where ""jobid"" = @id and ""name"" = @name",
-                    new { id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture), name = "Name" }).Single();
+                    new { id = JobId.ToLong(jobId), name = "Name" }).Single();
 
                 Assert.Equal("Value", parameter.value);
             });
@@ -375,7 +375,7 @@ values ('', '', now() at time zone 'utc') returning ""id""";
                 var parameter = sql.Query(
                     @"select * from """ + GetSchemaName() +
                     @""".""jobparameter"" where ""jobid"" = @id and ""name"" = @name",
-                    new { id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture), name = "Name" }).Single();
+                    new { id = JobId.ToLong(jobId), name = "Name" }).Single();
 
                 Assert.Equal("AnotherValue", parameter.value);
             });
@@ -398,7 +398,7 @@ values ('', '', now() at time zone 'utc') returning ""id""";
                 var parameter = sql.Query(
                     @"select * from """ + GetSchemaName() +
                     @""".""jobparameter"" where ""jobid"" = @id and ""name"" = @name",
-                    new { id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture), name = "Name" }).Single();
+                    new { id = JobId.ToLong(jobId), name = "Name" }).Single();
 
                 Assert.Equal((string)null, parameter.value);
             });
@@ -457,7 +457,7 @@ RETURNING ""jobid"";
                     arrangeSql,
                     new { name = "name", value = "value" }).Single();
 
-                var value = connection.GetJobParameter(Convert.ToString(id, CultureInfo.InvariantCulture), "name");
+                var value = connection.GetJobParameter(JobId.ToString(id), "name");
 
                 Assert.Equal("value", value);
             });

@@ -97,7 +97,7 @@ VALUES (@jobId, @name, @value);
         public override JobData GetJobData(string jobIdString)
         {
             Guard.ThrowIfNull(jobIdString, nameof(jobIdString));
-            var jobId = Convert.ToInt32(jobIdString, CultureInfo.InvariantCulture);
+            var jobId = JobId.ToLong(jobIdString);
 
             const string sql = @"
 SELECT ""invocationdata"" ""invocationData"", ""statename"" ""stateName"", ""arguments"", ""createdat"" ""createdAt"" 
@@ -148,7 +148,7 @@ WHERE j.id = @jobId;
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
                 sqlState = connectionHolder.Connection
-                    .Query<SqlState>(query, new { jobId = Convert.ToInt32(jobIdString, CultureInfo.InvariantCulture) })
+                    .Query<SqlState>(query, new { jobId = JobId.ToLong(jobIdString) })
                     .SingleOrDefault();
             }
 
@@ -176,7 +176,7 @@ DO UPDATE SET value = @value
 
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
-                var parameters = new { jobId = Convert.ToInt32(id, CultureInfo.InvariantCulture), name, value };
+                var parameters = new { jobId = JobId.ToLong(id), name, value };
                 connectionHolder.Connection.Execute(query, parameters);
             }
         }
@@ -186,7 +186,7 @@ DO UPDATE SET value = @value
             Guard.ThrowIfNull(id, nameof(id));
             Guard.ThrowIfNull(name, nameof(name));
 
-            var jobId = Convert.ToInt32(id, CultureInfo.InvariantCulture);
+            var jobId = JobId.ToLong(id);
             const string query = @"SELECT value FROM jobparameter WHERE jobid = @id AND name = @name LIMIT 1;";
             return _connectionProvider.FetchFirstOrDefault<string>(query, new { id = jobId, name = name });
         }

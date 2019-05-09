@@ -26,18 +26,28 @@ namespace Hangfire.PostgreSql
             _options = options;
         }
 
+        public void Enqueue(string queue, long jobId)
+        {
+            const string query = @"
+INSERT INTO jobqueue (jobid, queue) 
+VALUES (@jobId, @queue)
+";
+            var parameters = new { jobId = jobId, queue = queue };
+            _connectionProvider.Execute(query, parameters);
+        }
+
         public IFetchedJob Dequeue(string[] queues, CancellationToken cancellationToken)
         {
             Guard.ThrowIfCollectionIsNullOrEmpty(queues, nameof(queues));
             cancellationToken.ThrowIfCancellationRequested();
 
-            const string fetchJobSqlTemplate = @"
+            var fetchJobSqlTemplate = $@"
 UPDATE jobqueue AS jobqueue
-SET fetchedat = @now
+SET fetchedat = @fetched
 WHERE jobqueue.id = (
     SELECT id
     FROM jobqueue
-    WHERE queue IN @queues
+    WHERE queue IN ('{string.Join("', '", queues)}')
     AND (fetchedat IS NULL OR fetchedat < @timeout)
     ORDER BY jobqueue.id DESC
     LIMIT 1
@@ -48,19 +58,13 @@ RETURNING jobqueue.id AS Id, jobid AS JobId, queue AS Queue, fetchedat AS Fetche
             FetchedJobDto fetchedJobDto;
             do
             {
-                var now = DateTime.UtcNow;
-
                 cancellationToken.ThrowIfCancellationRequested();
 
-                fetchedJobDto = _connectionProvider.FetchFirstOrDefault<FetchedJobDto>(
-                    fetchJobSqlTemplate,
-                    new { fetchedat = now, timeout = now - _options.InvisibilityTimeout, queues = queues });
+                var now = DateTime.UtcNow;
+                var parameters = new { fetched = now, timeout = now - _options.InvisibilityTimeout, queues = queues };
+                fetchedJobDto = _connectionProvider.FetchFirstOrDefault<FetchedJobDto>(fetchJobSqlTemplate, parameters);
 
-                if (fetchedJobDto == null)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    cancellationToken.Wait(_options.QueuePollInterval);
-                }
+                if (fetchedJobDto == null) cancellationToken.Wait(_options.QueuePollInterval);
 
             } while (fetchedJobDto == null);
 
@@ -69,16 +73,6 @@ RETURNING jobqueue.id AS Id, jobid AS JobId, queue AS Queue, fetchedat AS Fetche
                 fetchedJobDto.Id,
                 fetchedJobDto.JobId.ToString(CultureInfo.InvariantCulture),
                 fetchedJobDto.Queue);
-        }
-
-        public void Enqueue(string queue, long jobId)
-        {
-            const string query = @"
-INSERT INTO jobqueue (jobid, queue) 
-VALUES (@jobId, @queue)
-";
-            var parameters = new { jobId = jobId, queue = queue };
-            _connectionProvider.Execute(query, parameters);
         }
     }
 }

@@ -50,7 +50,7 @@ UPDATE job
 SET expireat = NOW() AT TIME ZONE 'UTC' + @expireIn
 WHERE id = @id;
 ";
-            var id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture);
+            var id = JobId.ToLong(jobId);
             QueueCommand((con, trx) => con.Execute(
                 sql,
                 new { id = id, expireIn = expireIn }, trx));
@@ -63,7 +63,7 @@ UPDATE job
 SET expireat = NULL 
 WHERE id = @id;
 ";
-            var id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture);
+            var id = JobId.ToLong(jobId);
             QueueCommand((con, trx) => con.Execute(
                 query,
                 new { id = id }, trx));
@@ -86,12 +86,12 @@ WHERE j.id = @id;
                 query,
                 new
                 {
-                    jobId = Convert.ToInt32(jobId, CultureInfo.InvariantCulture),
+                    id = JobId.ToLong(jobId),
+                    jobId = JobId.ToLong(jobId),
                     name = state.Name,
                     reason = state.Reason,
                     createdAt = DateTime.UtcNow,
-                    data = SerializationHelper.Serialize(state.SerializeData()),
-                    id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture)
+                    data = SerializationHelper.Serialize(state.SerializeData())
                 }, trx));
         }
 
@@ -114,7 +114,13 @@ VALUES (@jobId, @name, @reason, @createdAt, @data);
                 }, trx));
         }
 
-        public override void AddToQueue(string queue, string jobId) => _queue.Enqueue(queue, Convert.ToInt64(jobId, CultureInfo.InvariantCulture));
+        public override void AddToQueue(string queue, string jobId)
+        {
+            const string query = @"INSERT INTO jobqueue (jobid, queue) VALUES (@jobId, @queue);";
+            var parameters = new { jobId = JobId.ToLong(jobId), queue = queue };
+
+            QueueCommand((con, trx) => con.Execute(query, parameters, trx));
+        }
 
         public override void IncrementCounter(string key)
         {

@@ -157,21 +157,22 @@ returning ""id""";
         }
 
         [Fact, CleanDatabase]
-        public void AddToQueue_CallsEnqueue_OnTargetPersistentQueue()
+        public void AddToQueue_InsertsJobIdToQueue()
         {
             UseConnection((provider, connection) =>
             {
                 Commit(provider, x => x.AddToQueue("default", "1"));
 
-                _queue.Verify(x => x.Enqueue("default", 1));
+                var queueLength = connection.ExecuteScalar<int>("SELECT count(*) FROM jobqueue WHERE jobId = 1");
+
+                Assert.Equal(1, queueLength);
             });
         }
 
         private static dynamic GetTestJob(IDbConnection connection, string jobId)
         {
             return connection
-                .Query(@"select * from """ + GetSchemaName() + @""".""job"" where ""id"" = @id",
-                    new { id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture) })
+                .Query(@"SELECT * FROM job WHERE id = @id", new { id = JobId.ToLong(jobId) })
                 .Single();
         }
 

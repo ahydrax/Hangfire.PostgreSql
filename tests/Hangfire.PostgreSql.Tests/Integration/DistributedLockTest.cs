@@ -76,7 +76,7 @@ namespace Hangfire.PostgreSql.Tests.Integration
         [Trait("Category","Integration")]
         public static void Ctor_ActuallyGrantsExclusiveLock()
         {
-            const int numberOfParallelJobs = 1000;
+            const int numberOfParallelJobs = 5000;
             var connectionProvider = ConnectionUtils.GetConnectionProvider();
             var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = numberOfParallelJobs };
             var i = 0;
