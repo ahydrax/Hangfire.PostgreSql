@@ -6,6 +6,9 @@ using Npgsql;
 
 namespace Hangfire.PostgreSql
 {
+    /// <summary>
+    /// Contains dashboard metrics
+    /// </summary>
     public static class PostgreSqlDashboardMetrics
     {
         /// <summary>
@@ -25,46 +28,67 @@ namespace Hangfire.PostgreSql
             return configuration;
         }
 
+        /// <summary>
+        /// Displays maximum available connections.
+        /// </summary>
         [PublicAPI]
         public static readonly DashboardMetric MaxConnections = new DashboardMetric(
             "pg:connections:max",
-            "Max connections",
+            "Max Connections",
             page => GetMetricByQuery<long>(page, @"SHOW max_connections;"));
-
+        
+        /// <summary>
+        /// Displays active connections.
+        /// </summary>
         [PublicAPI]
         public static readonly DashboardMetric ActiveConnections = new DashboardMetric(
             "pg:connections:active",
-            "Active connections",
+            "Connections",
             page => GetMetricByQuery<long>(page, @"SELECT numbackends from pg_stat_database WHERE datname = current_database();"));
-
+        
+        /// <summary>
+        /// Displays active PostgreSQL locks.
+        /// </summary>
         [PublicAPI]
         public static readonly DashboardMetric PostgreSqlLocksCount = new DashboardMetric(
             "pg:locks:count",
-            "PostgreSQL locks",
+            "PostgreSQL Locks",
             page => GetMetricByQuery<long>(page, @"SELECT COUNT(*) FROM pg_locks;"));
-
+        
+        /// <summary>
+        /// Displays active distributed locks acquired by storage.
+        /// </summary>
         [PublicAPI]
         public static readonly DashboardMetric DistributedLocksCount = new DashboardMetric(
             "app:locks:count",
-            "Application locks",
+            "Application Locks",
             page => GetMetricByQuery<long>(page, @"SELECT COUNT(*) FROM lock;"));
-
+        
+        /// <summary>
+        /// Displays PostgreSQL server version.
+        /// </summary>
         [PublicAPI]
         public static readonly DashboardMetric PostgreSqlServerVersion = new DashboardMetric(
             "pg:version",
-            "PostgreSQL version",
+            "PostgreSQL Version",
             page => Execute(page, x => new Metric(x.PostgreSqlVersion.ToString()), UndefinedMetric));
-
+        
+        /// <summary>
+        /// Displays PostgreSQL server cache hit ratio.
+        /// </summary>
         [PublicAPI]
         public static readonly DashboardMetric CacheHitsPerRead = new DashboardMetric(
             "pg:cache:hitratio",
-            "Cache hit ratio",
+            "Cache Hit Ratio",
             page => GetMetricByQuery<long>(page, @"SELECT ROUND(SUM(blks_hit) / SUM(blks_read)) FROM pg_stat_database;"));
-
+        
+        /// <summary>
+        /// Displays PostgreSQL connection usage ratio.
+        /// </summary>
         [PublicAPI]
         public static readonly DashboardMetric ConnectionUsageRatio = new DashboardMetric(
             "pg:connections:ratio",
-            "Connections used",
+            "Connections Used",
             page => Execute(page, connection =>
             {
                 var max = connection.ExecuteScalar<long>(@"SHOW max_connections;");
