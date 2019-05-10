@@ -2,14 +2,14 @@ using System;
 
 namespace Hangfire.PostgreSql
 {
+    /// <summary>
+    /// Occurs when distributed lock cannot be released.
+    /// </summary>
+    [Serializable]
     public class DistributedLockException : Exception
     {
-        public DistributedLockException() { }
-
-        public DistributedLockException(string message) 
+        /// <inheritdoc/>
+        public DistributedLockException(string message)
             : base(message) { }
-
-        public DistributedLockException(string message, Exception innerException) 
-            : base(message, innerException) { }
     }
 }
