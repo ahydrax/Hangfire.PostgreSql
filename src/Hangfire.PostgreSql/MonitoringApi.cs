@@ -14,7 +14,7 @@ using FetchedJobDto = Hangfire.Storage.Monitoring.FetchedJobDto;
 // ReSharper disable RedundantAnonymousTypePropertyName
 namespace Hangfire.PostgreSql
 {
-    internal class MonitoringApi : IMonitoringApi
+    internal sealed class MonitoringApi : IMonitoringApi
     {
         private const string AscOrder = "ASC";
         private const string DescOrder = "DESC";
@@ -248,54 +248,20 @@ ORDER BY id DESC;
 
         public StatisticsDto GetStatistics()
         {
-            const string sql = @"
-SELECT statename ""State"", 
-       COUNT(*) ""Count"" 
-FROM job
-WHERE statename IS NOT NULL
-GROUP BY statename;
-
-SELECT COUNT(*) 
-FROM server;
-
-SELECT SUM(value) 
-FROM counter 
-WHERE key = 'stats:succeeded';
-
-SELECT SUM(value) 
-FROM counter 
-WHERE key = 'stats:deleted';
-
-SELECT COUNT(*) 
-FROM set 
-WHERE key = 'recurring-jobs';
-";
-
-            var stats = new StatisticsDto();
+            var statistics = new StatisticsDto();
             using (var connectionHolder = _connectionProvider.AcquireConnection())
-            using (var gridReader = connectionHolder.Connection.QueryMultiple(sql))
             {
-                var countByStates = gridReader.Read().ToDictionary(x => x.State, x => x.Count);
-
-                long GetCountIfExists(string name) => countByStates.ContainsKey(name) ? countByStates[name] : 0;
-
-                stats.Enqueued = GetCountIfExists(EnqueuedState.StateName);
-                stats.Failed = GetCountIfExists(FailedState.StateName);
-                stats.Processing = GetCountIfExists(ProcessingState.StateName);
-                stats.Scheduled = GetCountIfExists(ScheduledState.StateName);
-
-                stats.Servers = gridReader.Read<long>().Single();
-
-                stats.Succeeded = gridReader.Read<long?>().SingleOrDefault() ?? 0;
-                stats.Deleted = gridReader.Read<long?>().SingleOrDefault() ?? 0;
-
-                stats.Recurring = gridReader.Read<long>().Single();
+                statistics.Enqueued = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM job WHERE statename = 'Enqueued';");
+                statistics.Failed = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM job WHERE statename = 'Failed';");
+                statistics.Processing = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM job WHERE statename = 'Processing';");
+                statistics.Scheduled = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM job WHERE statename = 'Scheduled';");
+                statistics.Servers = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM server;");
+                statistics.Succeeded = connectionHolder.Fetch<long>("SELECT SUM(value) FROM counter WHERE key = 'stats:succeeded';");
+                statistics.Deleted = connectionHolder.Fetch<long>("SELECT SUM(value) FROM counter WHERE key = 'stats:deleted';");
+                statistics.Recurring = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM set WHERE key = 'recurring-jobs';");
+                statistics.Queues = GetQueues().LongCount();
             }
-
-            stats.Queues = GetQueues().Count();
-
-            return stats;
-
+            return statistics;
         }
 
         private Dictionary<DateTime, long> GetHourlyTimelineStats(string type)
@@ -391,16 +357,27 @@ LIMIT @count OFFSET @start;
         private const string EnqueuedFetchCondition = "IS NULL";
         private const string FetchedFetchCondition = "IS NOT NULL";
 
+
+        private readonly object _cachedQueuesSyncRoot = new object();
+        private DateTime _cachedQueuesUpdatedAt = DateTime.MinValue;
+        private List<string> _cachedQueues = new List<string>(0);
+
         public IEnumerable<string> GetQueues()
         {
-            const string query = @"
-SELECT DISTINCT queue 
-FROM jobqueue;
-";
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
+            if (DateTime.UtcNow - TimeSpan.FromSeconds(5) > _cachedQueuesUpdatedAt)
             {
-                return connectionHolder.Connection.Query(query).Select(x => (string)x.queue).ToList();
+                lock (_cachedQueuesSyncRoot)
+                {
+                    if (DateTime.UtcNow - TimeSpan.FromSeconds(5) > _cachedQueuesUpdatedAt)
+                    {
+                        _cachedQueuesUpdatedAt = DateTime.UtcNow;
+                        const string query = @"SELECT DISTINCT queue FROM jobqueue;";
+                        _cachedQueues = _connectionProvider.FetchList<string>(query);
+                    }
+                }
             }
+
+            return _cachedQueues;
         }
 
         public JobList<EnqueuedJobDto> EnqueuedJobs(string queue, int from, int perPage)
