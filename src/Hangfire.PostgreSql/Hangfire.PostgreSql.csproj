@@ -1,29 +1,32 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>PostgreSql storage implementation for Hangfire (background job system for ASP.NET applications).</Description>
-    <Copyright>Copyright © 2014-2017 Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Copyright>
-    <AssemblyTitle>Hangfire PostgreSql Storage</AssemblyTitle>
-    <Authors>Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Authors>
-    <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <AssemblyName>Hangfire.PostgreSql</AssemblyName>
-    <OutputType>Library</OutputType>
+    <!--Package info and copyright-->
     <PackageId>Hangfire.PostgreSql.ahydrax</PackageId>
-    <PackageTags>Hangfire;PostgreSql;Postgres</PackageTags>
+    <PackageTags>Hangfire;PostgreSql;PostgreSQL;Postgres;postgre</PackageTags>
     <PackageReleaseNotes>https://github.com/ahydrax/Hangfire.PostgreSql/releases</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/ahydrax/Hangfire.PostgreSql</PackageProjectUrl>
     <PackageLicense>https://raw.githubusercontent.com/ahydrax/Hangfire.PostgreSql/master/LICENSE.md</PackageLicense>
+    <AssemblyTitle>Hangfire PostgreSQL Storage</AssemblyTitle>
+    <Description>PostgreSQL storage implementation for Hangfire (background job system for ASP.NET applications).</Description>
+    <Copyright>Copyright © 2014-2019 Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Copyright>
+    <Authors>Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Authors>
+    <Company>Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Company>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--Build properties-->
+    <AssemblyName>Hangfire.PostgreSql</AssemblyName>
+    <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
+    <OutputType>Library</OutputType>
     <Version>1.7.0</Version>
     <FileVersion>1.7.0</FileVersion>
     <AssemblyVersion>1.7.0</AssemblyVersion>
     <NeutralLanguage />
+    <DebugType>portable</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Company>Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Company>
   </PropertyGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
-    <Reference Include="System.Configuration" />
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
+
   <ItemGroup>
     <None Remove="Schema\Install.v10.sql" />
     <None Remove="Schema\Install.v11.sql" />
@@ -34,6 +37,7 @@
     <None Remove="Schema\Install.v6.sql" />
     <None Remove="Schema\Install.v7.sql" />
   </ItemGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Schema\Install.v12.sql" />
     <EmbeddedResource Include="Schema\Install.v11.sql" />
@@ -46,6 +50,7 @@
     <EmbeddedResource Include="Schema\Install.v7.sql" />
     <EmbeddedResource Include="Schema\Install.v8.sql" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Dapper" Version="1.60.6" />
     <PackageReference Include="Hangfire.Core" Version="1.7.2" />

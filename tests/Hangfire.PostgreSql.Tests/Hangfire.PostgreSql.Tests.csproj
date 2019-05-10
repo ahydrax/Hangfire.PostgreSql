@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AssemblyTitle>Hangfire.PostgreSql.Tests</AssemblyTitle>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFrameworks>netcoreapp2.2;net462</TargetFrameworks>
     <AssemblyName>Hangfire.PostgreSql.Tests</AssemblyName>
   </PropertyGroup>
 
