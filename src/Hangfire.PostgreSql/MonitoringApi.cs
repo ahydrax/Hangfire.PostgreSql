@@ -347,11 +347,8 @@ ORDER BY j.id {sorting}
 LIMIT @count OFFSET @start;
 ";
             var parameters = new { stateName = stateName, start = @from, count = count };
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                var jobs = connectionHolder.Connection.Query<SqlJob>(query, parameters).ToList();
-                return Utils.DeserializeJobs(jobs, selector);
-            }
+            var jobs = _connectionProvider.FetchList<SqlJob>(query, parameters);
+            return Utils.DeserializeJobs(jobs, selector);
         }
 
         private const string EnqueuedFetchCondition = "IS NULL";
@@ -384,21 +381,18 @@ LIMIT @count OFFSET @start;
         {
             var enqueuedJobsQuery = GetQuery(queue, @from, perPage, EnqueuedState.StateName, EnqueuedFetchCondition);
 
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                var jobs = connectionHolder.Connection.Query<SqlJob>(enqueuedJobsQuery).ToList();
+            var jobs = _connectionProvider.FetchList<SqlJob>(enqueuedJobsQuery);
 
-                return Utils.DeserializeJobs(
-                    jobs,
-                    (sqlJob, job, stateData) => new EnqueuedJobDto
-                    {
-                        Job = job,
-                        State = sqlJob.StateName,
-                        EnqueuedAt = sqlJob.StateName == EnqueuedState.StateName
-                            ? JobHelper.DeserializeNullableDateTime(stateData["EnqueuedAt"])
-                            : null
-                    });
-            }
+            return Utils.DeserializeJobs(
+                jobs,
+                (sqlJob, job, stateData) => new EnqueuedJobDto
+                {
+                    Job = job,
+                    State = sqlJob.StateName,
+                    EnqueuedAt = sqlJob.StateName == EnqueuedState.StateName
+                        ? JobHelper.DeserializeNullableDateTime(stateData["EnqueuedAt"])
+                        : null
+                });
         }
 
         public JobList<FetchedJobDto> FetchedJobs(string queue, int from, int perPage)
@@ -440,24 +434,12 @@ LIMIT {perPage} OFFSET {from};";
         private EnqueuedAndFetchedJobsCount GetEnqueuedAndFetchedCount(string queue)
         {
             const string query = @"
-SELECT (
-        SELECT COUNT(*) 
-        FROM jobqueue 
-        WHERE fetchedat IS NULL 
-        AND queue = @queue
-    ) AS Enqueued, 
-    (
-        SELECT COUNT(*) 
-        FROM jobqueue 
-        WHERE fetchedat IS NOT NULL 
-        AND queue = @queue
-    ) AS Fetched;
+SELECT COUNT(CASE WHEN fetchedat IS NULL THEN 1 ELSE 0 END) AS Enqueued,
+       COUNT(CASE WHEN fetchedat IS NOT NULL THEN 1 ELSE 0 END) AS Fetched
+FROM jobqueue
+WHERE queue = @queue
 ";
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                var result = connectionHolder.Connection.Query<EnqueuedAndFetchedJobsCount>(query, new { queue = queue }).Single();
-                return result;
-            }
+            return _connectionProvider.FetchFirstOrDefault<EnqueuedAndFetchedJobsCount>(query, new { queue = queue });
         }
     }
 }
