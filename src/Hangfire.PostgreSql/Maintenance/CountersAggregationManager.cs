@@ -6,6 +6,7 @@ using Hangfire.Common;
 using Hangfire.Logging;
 using Hangfire.PostgreSql.Connectivity;
 using Hangfire.Server;
+using Hangfire.Storage;
 
 namespace Hangfire.PostgreSql.Maintenance
 {
@@ -25,7 +26,7 @@ namespace Hangfire.PostgreSql.Maintenance
         private readonly TimeSpan _checkInterval;
 
         public CountersAggregationManager(IConnectionProvider connectionProvider)
-            : this(connectionProvider, TimeSpan.FromHours(1))
+            : this(connectionProvider, TimeSpan.FromSeconds(5))
         {
         }
 
@@ -53,7 +54,21 @@ namespace Hangfire.PostgreSql.Maintenance
             cancellationToken.ThrowIfCancellationRequested();
             foreach (var processedCounter in ProcessedCounters)
             {
-                AggregateCounter(processedCounter);
+                DistributedLock @lock = null;
+                try
+                {
+                    @lock = new DistributedLock("counters:aggregation", TimeSpan.FromSeconds(1), _connectionProvider);
+                    AggregateCounter(processedCounter);
+                }
+                catch (DistributedLockTimeoutException)
+                {
+                    // means that someone already aggregating counters
+                }
+                finally
+                {
+                    @lock?.Dispose();
+                }
+
                 cancellationToken.ThrowIfCancellationRequested();
             }
         }
@@ -64,24 +79,25 @@ namespace Hangfire.PostgreSql.Maintenance
             using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.ReadCommitted))
             {
                 const string aggregateQuery = @"
-WITH counters AS (
+WITH aggregated_counters AS (
 DELETE FROM counter
 WHERE key = @counterName
 AND expireat IS NULL
 RETURNING *
 )
 
-SELECT SUM(value) FROM counters;
+SELECT SUM(value) FROM aggregated_counters;
 ";
 
                 var aggregatedValue = connectionHolder.Connection.ExecuteScalar<long>(aggregateQuery, new { counterName }, transaction);
-                transaction.Commit();
 
                 if (aggregatedValue > 0)
                 {
                     const string query = @"INSERT INTO counter (key, value) VALUES (@key, @value);";
-                    connectionHolder.Connection.Execute(query, new { key = counterName, value = aggregatedValue });
+                    connectionHolder.Connection.Execute(query, new { key = counterName, value = aggregatedValue }, transaction);
                 }
+                transaction.Commit();
+
                 Logger.InfoFormat("Aggregated counter \'{0}\', value: {1}", counterName, aggregatedValue);
             }
         }
