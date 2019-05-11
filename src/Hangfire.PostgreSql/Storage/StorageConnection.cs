@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using Dapper;
 using Hangfire.Common;
@@ -47,10 +49,11 @@ namespace Hangfire.PostgreSql.Storage
             Job job,
             IDictionary<string, string> parameters,
             DateTime createdAt,
-            TimeSpan expireIn)
+            TimeSpan expiresIn)
         {
             Guard.ThrowIfNull(job, nameof(job));
             Guard.ThrowIfNull(parameters, nameof(parameters));
+            Guard.ThrowIfValueIsNotPositive(expiresIn, nameof(expiresIn));
 
             const string createJobSql = @"
 INSERT INTO job (invocationdata, arguments, createdat, expireat)
@@ -60,39 +63,34 @@ RETURNING id;
             var invocationData = InvocationData.SerializeJob(job);
 
             using (var connectionHolder = _connectionProvider.AcquireConnection())
+            using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.ReadCommitted))
             {
-                var jobId = connectionHolder.FetchFirstOrDefault<int>(
-                    createJobSql,
-                    new
-                    {
-                        invocationData = SerializationHelper.Serialize(invocationData),
-                        arguments = invocationData.Arguments,
-                        createdAt = createdAt,
-                        expireAt = createdAt.Add(expireIn)
-                    });
+                var createJobParameters = new
+                {
+                    invocationData = SerializationHelper.Serialize(invocationData),
+                    arguments = invocationData.Arguments,
+                    createdAt = createdAt,
+                    expireAt = createdAt.Add(expiresIn)
+                };
+                var jobId = connectionHolder.FetchFirstOrDefault<long>(createJobSql, createJobParameters, transaction);
 
                 if (parameters.Count > 0)
                 {
-                    var parameterArray = new object[parameters.Count];
-                    var parameterIndex = 0;
-                    foreach (var parameter in parameters)
+                    var parametersArray = parameters.Select(x => new
                     {
-                        parameterArray[parameterIndex++] = new
-                        {
-                            jobId = jobId,
-                            name = parameter.Key,
-                            value = parameter.Value
-                        };
-                    }
+                        jobId = jobId,
+                        name = x.Key,
+                        value = x.Value
+                    }).ToArray();
 
                     const string insertParameterSql = @"
-INSERT INTO jobparameter (jobid, name, value)
-VALUES (@jobId, @name, @value);
+insert into jobparameter (jobid, name, value)
+values (@jobId, @name, @value);
 ";
-                    connectionHolder.Connection.Execute(insertParameterSql, parameterArray);
-
+                    connectionHolder.Execute(insertParameterSql, parametersArray, transaction);
                 }
-                return jobId.ToString(CultureInfo.InvariantCulture);
+                transaction.Commit();
+                return JobId.ToString(jobId);
             }
         }
 
@@ -102,9 +100,9 @@ VALUES (@jobId, @name, @value);
             var jobId = JobId.ToLong(jobIdString);
 
             const string sql = @"
-SELECT ""invocationdata"" ""invocationData"", ""statename"" ""stateName"", ""arguments"", ""createdat"" ""createdAt"" 
-FROM job 
-WHERE ""id"" = @id;
+select invocationdata as invocationData, statename as stateName, arguments, createdat as createdAt
+from job 
+where id = @id;
 ";
             var jobData = _connectionProvider.FetchFirstOrDefault<SqlJob>(sql, new { id = jobId });
 
@@ -112,11 +110,13 @@ WHERE ""id"" = @id;
 
             // TODO: conversion exception could be thrown.
             var invocationData = SerializationHelper.Deserialize<InvocationData>(jobData.InvocationData);
-            invocationData.Arguments = jobData.Arguments;
+            if (!string.IsNullOrEmpty(jobData.Arguments))
+            {
+                invocationData.Arguments = jobData.Arguments;
+            }
 
             Job job = null;
             JobLoadException loadException = null;
-
             try
             {
                 job = invocationData.DeserializeJob();
