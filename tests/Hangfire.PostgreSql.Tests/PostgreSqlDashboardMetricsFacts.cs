@@ -26,6 +26,7 @@ namespace Hangfire.PostgreSql.Tests
         public static IEnumerable<object[]> GetMetrics()
         {
             yield return new object[] { PostgreSqlDashboardMetrics.MaxConnections };
+            yield return new object[] { PostgreSqlDashboardMetrics.ConnectionUsageRatio };
             yield return new object[] { PostgreSqlDashboardMetrics.DistributedLocksCount };
             yield return new object[] { PostgreSqlDashboardMetrics.ActiveConnections };
             yield return new object[] { PostgreSqlDashboardMetrics.CacheHitsPerRead };
