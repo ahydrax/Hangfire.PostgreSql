@@ -618,6 +618,25 @@ returning ""id""";
         }
 
         [Fact, CleanDatabase]
+        public void SetRangeInHash_CanSetANullValue()
+        {
+            UseConnection((provider, connection) =>
+            {
+                Commit(provider, x => x.SetRangeInHash("some-hash", new Dictionary<string, string>
+                {
+                    { "Key1", null }
+                }));
+
+                var result = connection.Query<(string field, string value)>(
+                        "select field, value from hash where key = @key",
+                        new { key = "some-hash" })
+                    .ToDictionary(x => x.field, x => x.value);
+
+                Assert.Null(result["Key1"]);
+            });
+        }
+
+        [Fact, CleanDatabase]
         public void SetRangeInHash_MergesAllRecords()
         {
             UseConnection((provider, connection) =>
