@@ -16,8 +16,8 @@ namespace Hangfire.PostgreSql
 {
     internal sealed class MonitoringApi : IMonitoringApi
     {
-        private const string AscOrder = "ASC";
-        private const string DescOrder = "DESC";
+        private const string AscOrder = "asc";
+        private const string DescOrder = "desc";
 
         private readonly IConnectionProvider _connectionProvider;
 
@@ -32,10 +32,10 @@ namespace Hangfire.PostgreSql
         public long EnqueuedCount(string queue)
         {
             const string query = @"
-SELECT COUNT(*) 
-FROM jobqueue 
-WHERE fetchedat IS NULL 
-AND queue = @queue
+select count(*) 
+from jobqueue 
+where fetchedat is null 
+and queue = @queue
 ";
             return GetLong(queue, query);
         }
@@ -43,10 +43,10 @@ AND queue = @queue
         public long FetchedCount(string queue)
         {
             const string query = @"
-SELECT COUNT(*) 
-FROM jobqueue 
-WHERE fetchedat IS NOT NULL 
-AND queue = @queue
+select count(*) 
+from jobqueue 
+where fetchedat is not null 
+and queue = @queue
 ";
             return GetLong(queue, query);
         }
@@ -97,7 +97,7 @@ AND queue = @queue
             List<Entities.Server> serverDtos;
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
-                const string query = @"SELECT * FROM server";
+                const string query = @"select * from server";
                 serverDtos = connectionHolder.Connection.Query<Entities.Server>(query).ToList();
             }
 
@@ -187,28 +187,28 @@ AND queue = @queue
         public JobDetailsDto JobDetails(string jobId)
         {
             const string sql = @"
-SELECT id ""Id"", 
+select id ""Id"", 
        invocationdata ""InvocationData"", 
        arguments ""Arguments"", 
        createdat ""CreatedAt"", 
        expireat ""ExpireAt"" 
-FROM job
-WHERE id = @id;
+from job
+where id = @id;
 
-SELECT jobid ""JobId"", 
+select jobid ""JobId"", 
        name ""Name"",
        value ""Value"" 
-FROM jobparameter 
-WHERE jobid = @id;
+from jobparameter 
+where jobid = @id;
 
-SELECT jobid ""JobId"", 
+select jobid ""JobId"", 
        name ""Name"", 
        reason ""Reason"", 
        createdat ""CreatedAt"", 
        data ""Data"" 
-FROM state 
-WHERE jobid = @id 
-ORDER BY id DESC;
+from state 
+where jobid = @id 
+order by id desc;
 ";
             var sqlParameters = new { id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture) };
 
@@ -251,14 +251,14 @@ ORDER BY id DESC;
             var statistics = new StatisticsDto();
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
-                statistics.Enqueued = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM job WHERE statename = 'Enqueued';");
-                statistics.Failed = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM job WHERE statename = 'Failed';");
-                statistics.Processing = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM job WHERE statename = 'Processing';");
-                statistics.Scheduled = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM job WHERE statename = 'Scheduled';");
-                statistics.Servers = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM server;");
-                statistics.Succeeded = connectionHolder.Fetch<long>("SELECT SUM(value) FROM counter WHERE key = 'stats:succeeded';");
-                statistics.Deleted = connectionHolder.Fetch<long>("SELECT SUM(value) FROM counter WHERE key = 'stats:deleted';");
-                statistics.Recurring = connectionHolder.Fetch<long>("SELECT COUNT(*) FROM set WHERE key = 'recurring-jobs';");
+                statistics.Enqueued = connectionHolder.Fetch<long>("select count(*) from job where statename = 'Enqueued';");
+                statistics.Failed = connectionHolder.Fetch<long>("select count(*) from job where statename = 'Failed';");
+                statistics.Processing = connectionHolder.Fetch<long>("select count(*) from job where statename = 'Processing';");
+                statistics.Scheduled = connectionHolder.Fetch<long>("select count(*) from job where statename = 'Scheduled';");
+                statistics.Servers = connectionHolder.Fetch<long>("select count(*) from server;");
+                statistics.Succeeded = connectionHolder.Fetch<long>("select sum(value) from counter where key = 'stats:succeeded';");
+                statistics.Deleted = connectionHolder.Fetch<long>("select sum(value) from counter where key = 'stats:deleted';");
+                statistics.Recurring = connectionHolder.Fetch<long>("select count(*) from set where key = 'recurring-jobs';");
                 statistics.Queues = GetQueues().LongCount();
             }
             return statistics;
@@ -283,10 +283,10 @@ ORDER BY id DESC;
         private Dictionary<DateTime, long> GetTimelineStats(IDictionary<string, DateTime> keyMaps)
         {
             const string query = @"
-SELECT key, COUNT(*) ""count"" 
-FROM counter 
-WHERE key = ANY (@keys)
-GROUP BY key;
+select key, count(*) ""count"" 
+from counter 
+where key = ANY (@keys)
+GROUP by key;
 ";
             Dictionary<string, long> valuesMap;
             using (var connectionHolder = _connectionProvider.AcquireConnection())
@@ -316,9 +316,9 @@ GROUP BY key;
         private long GetNumberOfJobsByStateName(string stateName)
         {
             const string sqlQuery = @"
-SELECT COUNT(*) 
-FROM job 
-WHERE statename = @state;
+select count(*) 
+from job 
+where statename = @state;
 ";
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
@@ -331,28 +331,28 @@ WHERE statename = @state;
         private JobList<TDto> GetJobs<TDto>(int from, int count, string stateName, Utils.JobSelector<TDto> selector, string sorting = AscOrder)
         {
             var query = $@"
-SELECT j.id ""Id"",
+select j.id ""Id"",
        j.invocationdata ""InvocationData"",
        j.arguments ""Arguments"", 
        j.createdat ""CreatedAt"", 
        j.expireat ""ExpireAt"",
-       NULL ""FetchedAt"",
+       null ""FetchedAt"",
        j.statename ""StateName"",
        s.reason ""StateReason"",
        s.data ""StateData""
-FROM job j
-LEFT JOIN state s ON j.stateid = s.id
-WHERE j.statename = @stateName 
-ORDER BY j.id {sorting} 
-LIMIT @count OFFSET @start;
+from job j
+LEFT join state s on j.stateid = s.id
+where j.statename = @stateName 
+order by j.id {sorting} 
+limit @count OFFSET @start;
 ";
             var parameters = new { stateName = stateName, start = @from, count = count };
             var jobs = _connectionProvider.FetchList<SqlJob>(query, parameters);
             return Utils.DeserializeJobs(jobs, selector);
         }
 
-        private const string EnqueuedFetchCondition = "IS NULL";
-        private const string FetchedFetchCondition = "IS NOT NULL";
+        private const string EnqueuedFetchCondition = "is null";
+        private const string FetchedFetchCondition = "is not null";
 
 
         private readonly object _cachedQueuesSyncRoot = new object();
@@ -368,7 +368,7 @@ LIMIT @count OFFSET @start;
                     if (DateTime.UtcNow - TimeSpan.FromSeconds(5) > _cachedQueuesUpdatedAt)
                     {
                         _cachedQueuesUpdatedAt = DateTime.UtcNow;
-                        const string query = @"SELECT DISTINCT queue FROM jobqueue;";
+                        const string query = @"select DISTINCT queue from jobqueue;";
                         _cachedQueues = _connectionProvider.FetchList<string>(query);
                     }
                 }
@@ -415,7 +415,7 @@ LIMIT @count OFFSET @start;
         }
 
         private static string GetQuery(string queue, int @from, int perPage, string stateName, string fetchCondition) => $@"
-SELECT j.id ""Id"",
+select j.id ""Id"",
        j.invocationdata ""InvocationData"", 
        j.arguments ""Arguments"", 
        j.createdat ""CreatedAt"", 
@@ -423,21 +423,21 @@ SELECT j.id ""Id"",
        s.name ""StateName"", 
        s.reason""StateReason"", 
        s.data ""StateData""
-FROM jobqueue jq
-LEFT JOIN job j ON jq.jobid = j.id
-LEFT JOIN state s ON s.id = j.stateid
-WHERE jq.queue = '{queue}'
-AND jq.fetchedat {fetchCondition}
-AND s.name = '{stateName}'
-LIMIT {perPage} OFFSET {from};";
+from jobqueue jq
+LEFT join job j on jq.jobid = j.id
+LEFT join state s on s.id = j.stateid
+where jq.queue = '{queue}'
+and jq.fetchedat {fetchCondition}
+and s.name = '{stateName}'
+limit {perPage} OFFSET {from};";
 
         private EnqueuedAndFetchedJobsCount GetEnqueuedAndFetchedCount(string queue)
         {
             const string query = @"
-SELECT COUNT(CASE WHEN fetchedat IS NULL THEN 1 ELSE 0 END) AS Enqueued,
-       COUNT(CASE WHEN fetchedat IS NOT NULL THEN 1 ELSE 0 END) AS Fetched
-FROM jobqueue
-WHERE queue = @queue
+select count(CASE WHEN fetchedat is null THEN 1 ELSE 0 END) as Enqueued,
+       count(CASE WHEN fetchedat is not null THEN 1 ELSE 0 END) as Fetched
+from jobqueue
+where queue = @queue
 ";
             return _connectionProvider.FetchFirstOrDefault<EnqueuedAndFetchedJobsCount>(query, new { queue = queue });
         }

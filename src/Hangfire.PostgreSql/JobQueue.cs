@@ -29,8 +29,8 @@ namespace Hangfire.PostgreSql
         public void Enqueue(string queue, long jobId)
         {
             const string query = @"
-INSERT INTO jobqueue (jobid, queue) 
-VALUES (@jobId, @queue)
+insert into jobqueue (jobid, queue) 
+values (@jobId, @queue)
 ";
             var parameters = new { jobId = jobId, queue = queue };
             _connectionProvider.Execute(query, parameters);
@@ -42,17 +42,17 @@ VALUES (@jobId, @queue)
             cancellationToken.ThrowIfCancellationRequested();
 
             var fetchJobSqlTemplate = $@"
-UPDATE jobqueue AS jobqueue
-SET fetchedat = @fetched
-WHERE jobqueue.id = (
-    SELECT id
-    FROM jobqueue
-    WHERE queue IN ('{string.Join("', '", queues)}')
-    AND (fetchedat IS NULL OR fetchedat < @timeout)
-    ORDER BY jobqueue.id DESC
-    LIMIT 1
-    FOR UPDATE SKIP LOCKED)
-RETURNING jobqueue.id AS Id, jobid AS JobId, queue AS Queue, fetchedat AS FetchedAt;
+update jobqueue as jobqueue
+set fetchedat = @fetched
+where jobqueue.id = (
+    select id
+    from jobqueue
+    where queue IN ('{string.Join("', '", queues)}')
+    and (fetchedat is null or fetchedat < @timeout)
+    order by jobqueue.id desc
+    limit 1
+    FOR update SKIP LOCKED)
+returning jobqueue.id as Id, jobid as JobId, queue as Queue, fetchedat as FetchedAt;
 ";
 
             FetchedJobDto fetchedJobDto;

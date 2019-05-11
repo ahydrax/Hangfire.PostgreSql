@@ -42,7 +42,7 @@ namespace Hangfire.PostgreSql.Tests.Utils
             {
                 var connection = connectionHolder.Connection;
                 var databaseName = ConnectionUtils.GetDatabaseName();
-                var databaseExists = connection.ExecuteScalar<int>(@"select COUNT(*) from pg_database where datname = @databaseName;",
+                var databaseExists = connection.ExecuteScalar<int>(@"select count(*) from pg_database where datname = @databaseName;",
                                          new { databaseName = databaseName }
                                      ) > 0;
 

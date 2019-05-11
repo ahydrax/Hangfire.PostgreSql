@@ -79,21 +79,21 @@ namespace Hangfire.PostgreSql.Maintenance
             using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.ReadCommitted))
             {
                 const string aggregateQuery = @"
-WITH aggregated_counters AS (
-    DELETE FROM counter
-    WHERE key = @counterName
-    AND expireat IS NULL
-    RETURNING *
+with aggregated_counters as (
+    delete from counter
+    where key = @counterName
+    and expireat is null
+    returning *
 )
 
-SELECT SUM(value) FROM aggregated_counters;
+select sum(value) from aggregated_counters;
 ";
 
                 var aggregatedValue = connectionHolder.Connection.ExecuteScalar<long>(aggregateQuery, new { counterName }, transaction);
 
                 if (aggregatedValue > 0)
                 {
-                    const string query = @"INSERT INTO counter (key, value) VALUES (@key, @value);";
+                    const string query = @"insert into counter (key, value) values (@key, @value);";
                     connectionHolder.Connection.Execute(query, new { key = counterName, value = aggregatedValue }, transaction);
                 }
                 transaction.Commit();

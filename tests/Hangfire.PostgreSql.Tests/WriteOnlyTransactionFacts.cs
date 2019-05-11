@@ -154,7 +154,7 @@ returning ""id""";
             {
                 Commit(provider, x => x.AddToQueue("default", "1"));
 
-                var queueLength = connection.ExecuteScalar<int>("SELECT count(*) FROM jobqueue WHERE jobId = 1");
+                var queueLength = connection.ExecuteScalar<int>("select count(*) from jobqueue where jobId = 1");
 
                 Assert.Equal(1, queueLength);
             });
@@ -163,7 +163,7 @@ returning ""id""";
         private static dynamic GetTestJob(IDbConnection connection, string jobId)
         {
             return connection
-                .Query(@"SELECT * FROM job WHERE id = @id", new { id = JobId.ToLong(jobId) })
+                .Query(@"select * from job where id = @id", new { id = JobId.ToLong(jobId) })
                 .Single();
         }
 

@@ -13,7 +13,7 @@ namespace Hangfire.PostgreSql.Storage
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"SELECT value FROM set WHERE key = @key ORDER BY score;";
+            const string query = @"select value from set where key = @key order by score;";
             var result = _connectionProvider.FetchList<string>(query, new { key = key });
             return new HashSet<string>(result);
         }
@@ -24,11 +24,11 @@ namespace Hangfire.PostgreSql.Storage
             if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be higher or equal to the `fromScore` value.");
 
             const string query = @"
-SELECT value 
-FROM set 
-WHERE key = @key 
-AND score BETWEEN @from AND @to 
-ORDER BY score LIMIT 1;
+select value 
+from set 
+where key = @key 
+and score between @from and @to 
+order by score limit 1;
 ";
             return _connectionProvider.FetchFirstOrDefault<string>(query, new { key, from = fromScore, to = toScore });
         }
@@ -40,11 +40,11 @@ ORDER BY score LIMIT 1;
             if (count < 1) throw new ArgumentException("The `count` must be equal or greater than 1.");
 
             var query = $@"
-SELECT value 
-FROM set 
-WHERE key = @key 
-AND score BETWEEN @from AND @to 
-ORDER BY score LIMIT {count};";
+select value 
+from set 
+where key = @key 
+and score between @from and @to 
+order by score limit {count};";
             return _connectionProvider.FetchList<string>(query, new { key, from = fromScore, to = toScore });
         }
 
@@ -52,7 +52,7 @@ ORDER BY score LIMIT {count};";
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"SELECT COUNT(key) FROM set WHERE key = @key";
+            const string query = @"select count(key) from set where key = @key";
             return _connectionProvider.FetchFirstOrDefault<long>(query, new { key });
         }
 
@@ -61,12 +61,12 @@ ORDER BY score LIMIT {count};";
             Guard.ThrowIfNull(key, nameof(key));
 
             const string query = @"
-SELECT value FROM (
-    SELECT value, row_number() OVER (ORDER BY score ASC) AS row_num 
-    FROM set
-    WHERE key = @key 
-    ) AS s
-WHERE s.row_num BETWEEN @startingFrom AND @endingAt";
+select value from (
+    select value, row_number() over (order by score asc) as row_num 
+    from set
+    where key = @key 
+    ) as s
+where s.row_num between @startingFrom and @endingAt";
 
             return _connectionProvider.FetchList<string>(query,
                     new
@@ -82,7 +82,7 @@ WHERE s.row_num BETWEEN @startingFrom AND @endingAt";
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"SELECT MIN(expireat) FROM set WHERE key = @key";
+            const string query = @"select min(expireat) from set where key = @key";
             var result = _connectionProvider.FetchFirstOrDefault<DateTime?>(query, new { key });
 
             if (!result.HasValue) return TimeSpan.FromSeconds(-1);

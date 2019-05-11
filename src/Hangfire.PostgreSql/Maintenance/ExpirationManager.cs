@@ -55,7 +55,7 @@ namespace Hangfire.PostgreSql.Maintenance
             {
                 Logger.DebugFormat("Removing outdated records from table '{0}'...", table);
 
-                var query = $@"DELETE FROM {table} WHERE expireat IS NOT NULL AND expireat < NOW() AT TIME ZONE 'UTC';";
+                var query = $@"delete from {table} where expireat is not null and expireat < now() at time zone 'UTC';";
 
                 var removedCount = _connectionProvider.Execute(query);
                 if (removedCount > 0)

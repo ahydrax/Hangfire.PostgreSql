@@ -119,10 +119,10 @@ values (@jobId, @queue) returning ""id""";
         public void Dequeue_ShouldLeaveJobInTheQueue_ButSetItsFetchedAtValue()
         {
             string arrangeSql = @"
-WITH i AS (
+with i as (
 insert into """ + GetSchemaName() + @""".""job"" (""invocationdata"", ""arguments"", ""createdat"")
 values (@invocationData, @arguments, now() at time zone 'utc')
-RETURNING ""id"")
+returning ""id"")
 insert into """ + GetSchemaName() + @""".""jobqueue"" (""jobid"", ""queue"")
 select i.""id"", @queue from i;
 ";
@@ -156,10 +156,10 @@ select i.""id"", @queue from i;
         public void Dequeue_ShouldFetchATimedOutJobs_FromTheSpecifiedQueue()
         {
             string arrangeSql = @"
-WITH i AS (
+with i as (
 insert into """ + GetSchemaName() + @""".""job"" (""invocationdata"", ""arguments"", ""createdat"")
 values (@invocationData, @arguments, now() at time zone 'utc')
-RETURNING ""id"")
+returning ""id"")
 insert into """ + GetSchemaName() + @""".""jobqueue"" (""jobid"", ""queue"", ""fetchedat"")
 select i.""id"", @queue, @fetchedAt from i;
 ";
@@ -192,10 +192,10 @@ select i.""id"", @queue, @fetchedAt from i;
         public void Dequeue_ShouldSetFetchedAt_OnlyForTheFetchedJob()
         {
             string arrangeSql = @"
-WITH i AS (
+with i as (
 insert into """ + GetSchemaName() + @""".""job"" (""invocationdata"", ""arguments"", ""createdat"")
 values (@invocationData, @arguments, now() at time zone 'utc')
-RETURNING ""id"")
+returning ""id"")
 insert into """ + GetSchemaName() + @""".""jobqueue"" (""jobid"", ""queue"")
 select i.""id"", @queue from i;
 ";
@@ -229,10 +229,10 @@ select i.""id"", @queue from i;
         public void Dequeue_ShouldFetchJobs_OnlyFromSpecifiedQueues()
         {
             string arrangeSql = @"
-WITH i AS (
+with i as (
 insert into """ + GetSchemaName() + @""".""job"" (""invocationdata"", ""arguments"", ""createdat"")
 values (@invocationData, @arguments, now() at time zone 'utc')
-RETURNING ""id"")
+returning ""id"")
 insert into """ + GetSchemaName() + @""".""jobqueue"" (""jobid"", ""queue"")
 select i.""id"", @queue from i;
 ";
@@ -255,7 +255,7 @@ select i.""id"", @queue from i;
         private void Dequeue_ShouldFetchJobs_FromMultipleQueues()
         {
             string arrangeSql = @"
-WITH i AS (
+with i as (
 insert into """ + GetSchemaName() + @""".""job"" (""invocationdata"", ""arguments"", ""createdat"")
 values (@invocationData, @arguments, now() at time zone 'utc')
 returning ""id"")

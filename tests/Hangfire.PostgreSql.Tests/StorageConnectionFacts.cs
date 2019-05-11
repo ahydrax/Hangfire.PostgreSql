@@ -244,16 +244,16 @@ values (@invocationData, @arguments, @stateName, now() at time zone 'utc') retur
         public void GetStateData_ReturnsCorrectData()
         {
             string createJobSql = @"
-INSERT INTO """ + GetSchemaName() + @""".""job"" (""invocationdata"", ""arguments"", ""statename"", ""createdat"")
-    VALUES ('', '', '', now() at time zone 'utc') RETURNING ""id"";
+insert into """ + GetSchemaName() + @""".""job"" (""invocationdata"", ""arguments"", ""statename"", ""createdat"")
+    values ('', '', '', now() at time zone 'utc') returning ""id"";
             ";
 
             string createStateSql = @"
 insert into """ + GetSchemaName() + @""".""state"" (""jobid"", ""name"", ""createdat"")
-VALUES(@jobId, 'old-state', now() at time zone 'utc');
+values(@jobId, 'old-state', now() at time zone 'utc');
 
 insert into """ + GetSchemaName() + @""".""state"" (""jobid"", ""name"", ""reason"", ""data"", ""createdat"")
-VALUES(@jobId, @name, @reason, @data, now() at time zone 'utc')
+values(@jobId, @name, @reason, @data, now() at time zone 'utc')
 returning ""id"";";
 
             string updateJobStateSql = @"
@@ -442,14 +442,14 @@ values ('', '', now() at time zone 'utc') returning ""id""";
         public void GetParameter_ReturnsParameterValue_WhenJobExists()
         {
             string arrangeSql = @"
-WITH ""insertedjob"" AS (
-    INSERT INTO """ + GetSchemaName() + @""".""job"" (""invocationdata"", ""arguments"", ""createdat"")
-    VALUES ('', '', now() at time zone 'utc') RETURNING ""id""
+with ""insertedjob"" as (
+    insert into """ + GetSchemaName() + @""".""job"" (""invocationdata"", ""arguments"", ""createdat"")
+    values ('', '', now() at time zone 'utc') returning ""id""
 )
-INSERT INTO """ + GetSchemaName() + @""".""jobparameter"" (""jobid"", ""name"", ""value"")
-SELECT ""insertedjob"".""id"", @name, @value
-FROM ""insertedjob""
-RETURNING ""jobid"";
+insert into """ + GetSchemaName() + @""".""jobparameter"" (""jobid"", ""name"", ""value"")
+select ""insertedjob"".""id"", @name, @value
+from ""insertedjob""
+returning ""jobid"";
 ";
             UseConnections((sql, connection) =>
             {

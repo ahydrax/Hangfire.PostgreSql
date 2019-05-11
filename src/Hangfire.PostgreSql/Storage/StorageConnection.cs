@@ -56,9 +56,9 @@ namespace Hangfire.PostgreSql.Storage
             Guard.ThrowIfValueIsNotPositive(expiresIn, nameof(expiresIn));
 
             const string createJobSql = @"
-INSERT INTO job (invocationdata, arguments, createdat, expireat)
-VALUES (@invocationData, @arguments, @createdAt, @expireAt) 
-RETURNING id;
+insert into job (invocationdata, arguments, createdat, expireat)
+values (@invocationData, @arguments, @createdAt, @expireAt) 
+returning id;
 ";
             var invocationData = InvocationData.SerializeJob(job);
 
@@ -140,10 +140,10 @@ where id = @id;
             Guard.ThrowIfNull(jobIdString, nameof(jobIdString));
 
             const string query = @"
-SELECT s.name AS Name, s.reason AS Reason, s.data AS Data
-FROM state s
-INNER JOIN job j ON j.stateid = s.id
-WHERE j.id = @jobId;
+select s.name as Name, s.reason as Reason, s.data as Data
+from state s
+inner join job j on j.stateid = s.id
+where j.id = @jobId;
 ";
 
             var sqlState = _connectionProvider.FetchFirstOrDefault<SqlState>(query, new { jobId = JobId.ToLong(jobIdString) });
@@ -163,10 +163,10 @@ WHERE j.id = @jobId;
             Guard.ThrowIfNull(name, nameof(name));
 
             const string query = @"
-INSERT INTO jobparameter (jobid, name, value)
-VALUES (@jobId, @name , @value)
-ON CONFLICT (jobid, name)
-DO UPDATE SET value = @value
+insert into jobparameter (jobid, name, value)
+values (@jobId, @name , @value)
+on conflict (jobid, name)
+do update set value = @value
 ";
 
             var parameters = new { jobId = JobId.ToLong(id), name, value };
@@ -179,7 +179,7 @@ DO UPDATE SET value = @value
             Guard.ThrowIfNull(name, nameof(name));
 
             var jobId = JobId.ToLong(id);
-            const string query = @"SELECT value FROM jobparameter WHERE jobid = @id AND name = @name LIMIT 1;";
+            const string query = @"select value from jobparameter where jobid = @id and name = @name limit 1;";
             return _connectionProvider.FetchFirstOrDefault<string>(query, new { id = jobId, name = name });
         }
 
@@ -187,7 +187,7 @@ DO UPDATE SET value = @value
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"SELECT SUM(value) FROM counter WHERE key = @key";
+            const string query = @"select sum(value) from counter where key = @key";
             return _connectionProvider.FetchFirstOrDefault<long?>(query, new { key }) ?? 0;
         }
     }

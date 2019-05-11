@@ -51,7 +51,7 @@ namespace Hangfire.PostgreSql
                     }
 
                     connection.Execute(
-                        @"UPDATE schema SET version = @version",
+                        @"update schema set version = @version",
                         new { version = lastMigration.Version },
                         transaction);
 
@@ -65,16 +65,16 @@ namespace Hangfire.PostgreSql
         }
 
         private static bool LockDatabase(NpgsqlConnection connection)
-            => connection.Query<bool>(@"SELECT pg_try_advisory_lock(12345)").Single();
+            => connection.Query<bool>(@"select pg_try_advisory_lock(12345)").Single();
 
         private static void UnlockDatabase(NpgsqlConnection connection)
-            => connection.Execute(@"SELECT pg_advisory_unlock(12345)");
+            => connection.Execute(@"select pg_advisory_unlock(12345)");
 
         private static int GetInstalledVersion(NpgsqlConnection connection)
         {
             try
             {
-                return connection.Query<int>(@"SELECT version FROM schema").SingleOrDefault();
+                return connection.Query<int>(@"select version from schema").SingleOrDefault();
             }
             catch
             {
@@ -93,7 +93,7 @@ namespace Hangfire.PostgreSql
                 // Already created
             }
 
-            connection.Execute($@"SET search_path={_schemaName}");
+            connection.Execute($@"set search_path={_schemaName}");
         }
 
         private static IEnumerable<MigrationInfo> GetMigrations()

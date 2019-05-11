@@ -32,8 +32,8 @@ namespace Hangfire.PostgreSql.Maintenance
             cancellationToken.ThrowIfCancellationRequested();
 
             const string query = @"
-DELETE FROM lock
-WHERE acquired < current_timestamp at time zone 'UTC' - @timeout";
+delete from lock
+where acquired < current_timestamp at time zone 'UTC' - @timeout";
 
             _connectionProvider.Execute(query, new { timeout = _lockTimeOut });
 

@@ -44,7 +44,7 @@ namespace Hangfire.PostgreSql
         public static readonly DashboardMetric ActiveConnections = new DashboardMetric(
             "pg:connections:active",
             "Connections",
-            page => GetMetricByQuery<long>(page, @"SELECT numbackends from pg_stat_database WHERE datname = current_database();"));
+            page => GetMetricByQuery<long>(page, @"select numbackends from pg_stat_database where datname = current_database();"));
         
         /// <summary>
         /// Displays active PostgreSQL locks.
@@ -53,7 +53,7 @@ namespace Hangfire.PostgreSql
         public static readonly DashboardMetric PostgreSqlLocksCount = new DashboardMetric(
             "pg:locks:count",
             "PostgreSQL Locks",
-            page => GetMetricByQuery<long>(page, @"SELECT COUNT(*) FROM pg_locks;"));
+            page => GetMetricByQuery<long>(page, @"select count(*) from pg_locks;"));
         
         /// <summary>
         /// Displays active distributed locks acquired by storage.
@@ -62,7 +62,7 @@ namespace Hangfire.PostgreSql
         public static readonly DashboardMetric DistributedLocksCount = new DashboardMetric(
             "app:locks:count",
             "Application Locks",
-            page => GetMetricByQuery<long>(page, @"SELECT COUNT(*) FROM lock;"));
+            page => GetMetricByQuery<long>(page, @"select count(*) from lock;"));
         
         /// <summary>
         /// Displays PostgreSQL server version.
@@ -80,7 +80,7 @@ namespace Hangfire.PostgreSql
         public static readonly DashboardMetric CacheHitsPerRead = new DashboardMetric(
             "pg:cache:hitratio",
             "Cache Hit Ratio",
-            page => GetMetricByQuery<long>(page, @"SELECT ROUND(SUM(blks_hit) / SUM(blks_read)) FROM pg_stat_database;"));
+            page => GetMetricByQuery<long>(page, @"select ROUND(sum(blks_hit) / sum(blks_read)) from pg_stat_database;"));
         
         /// <summary>
         /// Displays PostgreSQL connection usage ratio.
@@ -92,7 +92,7 @@ namespace Hangfire.PostgreSql
             page => Execute(page, connection =>
             {
                 var max = connection.ExecuteScalar<long>(@"SHOW max_connections;");
-                var current = connection.ExecuteScalar<long>(@"SELECT numbackends from pg_stat_database WHERE datname = current_database();");
+                var current = connection.ExecuteScalar<long>(@"select numbackends from pg_stat_database where datname = current_database();");
 
                 var ratio = current * 100 / max;
                 var ratioString = ratio + "%";

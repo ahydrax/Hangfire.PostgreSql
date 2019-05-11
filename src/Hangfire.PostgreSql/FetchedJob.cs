@@ -34,8 +34,8 @@ namespace Hangfire.PostgreSql
         public void RemoveFromQueue()
         {
             const string query = @"
-DELETE FROM jobqueue
-WHERE id = @id;
+delete from jobqueue
+where id = @id;
 ";
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
@@ -47,9 +47,9 @@ WHERE id = @id;
         public void Requeue()
         {
             const string query = @"
-UPDATE jobqueue 
-SET fetchedat = NULL 
-WHERE id = @id;
+update jobqueue 
+set fetchedat = null 
+where id = @id;
 ";
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {

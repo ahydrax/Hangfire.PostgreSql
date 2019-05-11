@@ -16,9 +16,9 @@ namespace Hangfire.PostgreSql.Storage
             Guard.ThrowIfNull(key, nameof(key));
 
             const string query = @"
-SELECT field AS Field, value AS Value 
-FROM hash 
-WHERE key = @key
+select field as Field, value as Value 
+from hash 
+where key = @key
 ;";
 
             var result = _connectionProvider
@@ -32,7 +32,7 @@ WHERE key = @key
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"SELECT COUNT(*) FROM hash WHERE key = @key";
+            const string query = @"select count(*) from hash where key = @key";
 
             return _connectionProvider.FetchFirstOrDefault<long>(query, new { key });
         }
@@ -41,7 +41,7 @@ WHERE key = @key
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"SELECT MIN(expireat) FROM hash WHERE key = @key";
+            const string query = @"select min(expireat) from hash where key = @key";
 
             var result = _connectionProvider.FetchFirstOrDefault<DateTime?>(query, new { key });
             if (!result.HasValue) return TimeSpan.FromSeconds(-1);
@@ -54,7 +54,7 @@ WHERE key = @key
             Guard.ThrowIfNull(key, nameof(key));
             Guard.ThrowIfNull(name, nameof(name));
 
-            const string query = @"SELECT value FROM hash WHERE key = @key AND field = @field";
+            const string query = @"select value from hash where key = @key and field = @field";
 
             return _connectionProvider.FetchFirstOrDefault<string>(query, new { key, field = name });
         }
@@ -65,20 +65,13 @@ WHERE key = @key
             Guard.ThrowIfNull(keyValuePairs, nameof(keyValuePairs));
 
             const string query = @"
-INSERT INTO hash(key, field, value)
-VALUES (@key, @field, @value)
-ON CONFLICT (key, field)
-DO UPDATE SET value = @value
+insert into hash(key, field, value)
+values (@key, @field, @value)
+on conflict (key, field)
+do update set value = @value
 ";
-
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                foreach (var keyValuePair in keyValuePairs)
-                {
-                    var parameters = new { key = key, field = keyValuePair.Key, value = keyValuePair.Value };
-                    connectionHolder.Execute(query, parameters);
-                }
-            }
+            var parameters = keyValuePairs.Select(x => new { key = key, field = x.Key, value = x.Value }).ToArray();
+            _connectionProvider.Execute(query, parameters);
         }
     }
 }

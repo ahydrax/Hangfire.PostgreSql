@@ -22,10 +22,10 @@ namespace Hangfire.PostgreSql.Storage
             };
 
             const string query = @"
-INSERT INTO server (id, data, lastheartbeat)
-VALUES (@id, @data, NOW() AT TIME ZONE 'UTC')
-ON CONFLICT (id)
-DO UPDATE SET data = @data, lastheartbeat = NOW() AT TIME ZONE 'UTC'
+insert into server (id, data, lastheartbeat)
+values (@id, @data, now() at time zone 'UTC')
+on conflict (id)
+do update set data = @data, lastheartbeat = now() at time zone 'UTC'
 ";
             var parameters = new { id = serverId, data = SerializationHelper.Serialize(data) };
             _connectionProvider.Execute(query, parameters);
@@ -35,7 +35,7 @@ DO UPDATE SET data = @data, lastheartbeat = NOW() AT TIME ZONE 'UTC'
         {
             Guard.ThrowIfNull(serverId, nameof(serverId));
 
-            const string query = @"UPDATE server SET lastheartbeat = @heartbeat WHERE id = @id;";
+            const string query = @"update server set lastheartbeat = @heartbeat where id = @id;";
             var parameters = new { id = serverId, heartbeat = DateTime.UtcNow };
             _connectionProvider.Execute(query, parameters);
         }
@@ -44,7 +44,7 @@ DO UPDATE SET data = @data, lastheartbeat = NOW() AT TIME ZONE 'UTC'
         {
             Guard.ThrowIfNull(serverId, nameof(serverId));
 
-            const string query = @"DELETE FROM server WHERE id = @id;";
+            const string query = @"delete from server where id = @id;";
             _connectionProvider.Execute(query, new { id = serverId });
         }
 
@@ -52,7 +52,7 @@ DO UPDATE SET data = @data, lastheartbeat = NOW() AT TIME ZONE 'UTC'
         {
             Guard.ThrowIfValueIsNotPositive(timeOut, nameof(timeOut));
 
-            const string query = @"DELETE FROM server WHERE lastheartbeat < NOW() AT TIME ZONE 'UTC' - @timeout";
+            const string query = @"delete from server where lastheartbeat < now() at time zone 'UTC' - @timeout";
             return _connectionProvider.Execute(query, new { timeout = timeOut });
         }
     }

@@ -40,9 +40,9 @@ namespace Hangfire.PostgreSql
                 using (var connectionHolder = _connectionProvider.AcquireConnection())
                 {
                     const string query = @"
-INSERT INTO lock(resource, acquired) 
-VALUES (@resource, current_timestamp at time zone 'UTC')
-ON CONFLICT (resource) DO NOTHING
+insert into lock(resource, acquired) 
+values (@resource, current_timestamp at time zone 'UTC')
+on conflict (resource) do nothing
 ;";
                     var parameters = new { resource = _resource };
                     var rowsAffected = connectionHolder.Connection.Execute(query, parameters);
@@ -79,8 +79,8 @@ ON CONFLICT (resource) DO NOTHING
                 _completed = true;
 
                 const string query = @"
-DELETE FROM lock 
-WHERE resource = @resource;
+delete from lock 
+where resource = @resource;
 ";
                 var rowsAffected = connectionHolder.Connection.Execute(query, new { resource = _resource });
                 if (rowsAffected <= 0)

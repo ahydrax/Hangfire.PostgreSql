@@ -18,15 +18,15 @@ namespace Hangfire.PostgreSql.Tests
             {
                 // Arrange
                 var timeout = TimeSpan.FromSeconds(7);
-                connection.Execute(@"INSERT INTO lock(resource, acquired) VALUES ('fresh_lock', NOW() at time zone 'UTC')");
-                connection.Execute(@"INSERT INTO lock(resource, acquired) VALUES ('expired_lock', NOW() at time zone 'UTC' - @timeout)", new { timeout });
+                connection.Execute(@"insert into lock(resource, acquired) values ('fresh_lock', now() at time zone 'UTC')");
+                connection.Execute(@"insert into lock(resource, acquired) values ('expired_lock', now() at time zone 'UTC' - @timeout)", new { timeout });
 
                 // Act
                 var expiredLocksManager = new ExpiredLocksManager(provider, timeout);
                 expiredLocksManager.Execute(CancellationToken.None);
 
                 // Assert
-                var locksCount = connection.ExecuteScalar<int>(@"SELECT COUNT(*) FROM lock");
+                var locksCount = connection.ExecuteScalar<int>(@"select count(*) from lock");
                 Assert.Equal(1, locksCount);
             });
         }
