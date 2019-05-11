@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AssemblyTitle>Hangfire.PostgreSql.Tests</AssemblyTitle>
-    <TargetFrameworks>netcoreapp2.2;net462</TargetFrameworks>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <AssemblyName>Hangfire.PostgreSql.Tests</AssemblyName>
   </PropertyGroup>
 
@@ -11,10 +11,6 @@
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="*.sql" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Hangfire.PostgreSql\Hangfire.PostgreSql.csproj" />
