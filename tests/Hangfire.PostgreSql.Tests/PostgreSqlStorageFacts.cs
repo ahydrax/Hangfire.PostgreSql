@@ -26,6 +26,15 @@ namespace Hangfire.PostgreSql.Tests
         }
 
         [Fact]
+        public void Ctor_ThrowsAnException_WhenConnectionBuilderIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => new PostgreSqlStorage(connectionBuilder: null));
+
+            Assert.Equal("connectionBuilder", exception.ParamName);
+        }
+
+        [Fact]
         public void Ctor_ThrowsAnException_WhenOptionsValueIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
@@ -34,7 +43,7 @@ namespace Hangfire.PostgreSql.Tests
             Assert.Equal("options", exception.ParamName);
         }
 
-        [Fact, CleanDatabase]
+        [Fact]
         public void GetMonitoringApi_ReturnsNonNullInstance()
         {
             var storage = CreateStorage();
@@ -42,7 +51,7 @@ namespace Hangfire.PostgreSql.Tests
             Assert.NotNull(api);
         }
 
-        [Fact, CleanDatabase]
+        [Fact]
         public void GetConnection_ReturnsNonNullInstance()
         {
             var storage = CreateStorage();
@@ -52,7 +61,7 @@ namespace Hangfire.PostgreSql.Tests
             }
         }
 
-        [Fact, CleanDatabase]
+        [Fact]
         public void GetComponents_ReturnsAllNeededComponents()
         {
             var storage = CreateStorage();
@@ -61,6 +70,8 @@ namespace Hangfire.PostgreSql.Tests
 
             var componentTypes = components.Select(x => x.GetType()).ToArray();
             Assert.Contains(typeof(ExpirationManager), componentTypes);
+            Assert.Contains(typeof(ExpiredLocksManager), componentTypes);
+            Assert.Contains(typeof(CountersAggregationManager), componentTypes);
         }
 
         private PostgreSqlStorage CreateStorage()

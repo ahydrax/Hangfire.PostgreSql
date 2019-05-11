@@ -2,12 +2,18 @@
 
 namespace Hangfire.PostgreSql
 {
+    /// <summary>
+    /// Contains PostgreSQL storage options
+    /// </summary>
     public class PostgreSqlStorageOptions
     {
         private TimeSpan _queuePollInterval;
         private TimeSpan _invisibilityTimeout;
         private TimeSpan _distributedLockTimeout;
 
+        /// <summary>
+        /// Initializes options with default values.
+        /// </summary>
         public PostgreSqlStorageOptions()
         {
             QueuePollInterval = TimeSpan.FromMilliseconds(300);
@@ -16,6 +22,9 @@ namespace Hangfire.PostgreSql
             PrepareSchemaIfNecessary = true;
         }
 
+        /// <summary>
+        /// Gets or sets a pause length between queue querying.
+        /// </summary>
         public TimeSpan QueuePollInterval
         {
             get => _queuePollInterval;
@@ -26,6 +35,9 @@ namespace Hangfire.PostgreSql
             }
         }
 
+        /// <summary>
+        /// Gets or sets job invisibility timeout in queue.
+        /// </summary>
         public TimeSpan InvisibilityTimeout
         {
             get => _invisibilityTimeout;
@@ -36,6 +48,9 @@ namespace Hangfire.PostgreSql
             }
         }
 
+        /// <summary>
+        /// Gets or sets timeout for distributed locks.
+        /// </summary>
         public TimeSpan DistributedLockTimeout
         {
             get => _distributedLockTimeout;
@@ -46,6 +61,9 @@ namespace Hangfire.PostgreSql
             }
         }
 
+        /// <summary>
+        /// Gets or sets whether storage should handle database schema.
+        /// </summary>
         public bool PrepareSchemaIfNecessary { get; set; }
     }
 }

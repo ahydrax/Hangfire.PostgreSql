@@ -61,8 +61,8 @@ namespace Hangfire.PostgreSql
         /// <summary>
         /// Initializes PostgreSqlStorage with the provided connection builder and the provided PostgreSqlStorageOptions.
         /// </summary>
-        /// <param name="connectionBuilder">A Postgres connection builder</param>
-        /// <param name="options"></param>
+        /// <param name="connectionBuilder">PostgreSQL connection builder.</param>
+        /// <param name="options">PostgreSQL storage options.</param>
         /// <exception cref="ArgumentNullException"><paramref name="connectionBuilder"/> is null.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="connectionBuilder"/> has an invalid PostgreSql connection string.</exception>

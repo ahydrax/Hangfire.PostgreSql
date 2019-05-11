@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Threading;
 using Dapper;
 using Hangfire.Common;
@@ -28,6 +27,9 @@ namespace Hangfire.PostgreSql.Storage
             _connectionProvider = connectionProvider;
             _queue = queue;
         }
+
+        // leave empty as we don't share any state
+        public override void Dispose() { }
 
         public override IWriteOnlyTransaction CreateWriteTransaction()
             => new WriteOnlyTransaction(_connectionProvider);
