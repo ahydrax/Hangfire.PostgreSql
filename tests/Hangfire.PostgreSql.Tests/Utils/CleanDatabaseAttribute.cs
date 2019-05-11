@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Threading;
 using Dapper;
+using Hangfire.PostgreSql.Connectivity;
 using Xunit;
 using Xunit.Sdk;
 
@@ -21,6 +22,7 @@ namespace Hangfire.PostgreSql.Tests.Utils
                 RecreateSchemaAndInstallObjects();
                 _sqlObjectInstalled = true;
             }
+
             CleanTables();
         }
 
@@ -37,36 +39,38 @@ namespace Hangfire.PostgreSql.Tests.Utils
 
         private static void RecreateSchemaAndInstallObjects()
         {
+            var schemaName = ConnectionUtils.GetSchemaName();
             var provider = ConnectionUtils.GetConnectionProvider();
-            using (var connectionHolder = provider.AcquireConnection())
-            {
-                var connection = connectionHolder.Connection;
-                var databaseName = ConnectionUtils.GetDatabaseName();
-                var databaseExists = connection.ExecuteScalar<int>(@"select count(*) from pg_database where datname = @databaseName;",
-                                         new { databaseName = databaseName }
-                                     ) > 0;
+            var databaseName = ConnectionUtils.GetDatabaseName();
+            var databaseExists = provider.FetchFirstOrDefault<int>(
+                                     @"select count(*) from pg_database where datname = @databaseName;",
+                                     new { databaseName = databaseName }) > 0;
 
-                if (!databaseExists)
-                {
-                    connection.Execute(@"CREATE DATABASE @databaseName", new { databaseName = databaseName });
-                }
+            if (!databaseExists)
+            {
+                provider.Execute(@"create database @databaseName", new { databaseName = databaseName });
             }
 
-            new DatabaseInitializer(ConnectionUtils.GetConnectionProvider(), ConnectionUtils.GetSchemaName()).Initialize();
-
-            using (var connectionHolder = provider.AcquireConnection())
-            {
-                PostgreSqlTestObjectsInitializer.CleanTables(connectionHolder.Connection);
-            }
+            new DatabaseInitializer(provider, schemaName).Initialize();
         }
 
         private static void CleanTables()
         {
             var provider = ConnectionUtils.GetConnectionProvider();
-            using (var connection = provider.AcquireConnection())
-            {
-                PostgreSqlTestObjectsInitializer.CleanTables(connection.Connection);
-            }
+            const string cleanQuery = @"
+truncate counter cascade;
+truncate hash cascade;
+truncate job cascade;
+truncate jobparameter cascade;
+truncate jobqueue cascade;
+truncate list cascade;
+truncate lock cascade;
+truncate server cascade;
+truncate set cascade;
+truncate state cascade;
+";
+
+            provider.Execute(cleanQuery);
         }
     }
 }

@@ -22,6 +22,7 @@ namespace Hangfire.PostgreSql
             IConnectionProvider connectionProvider)
         {
             Guard.ThrowIfNullOrEmpty(resource, nameof(resource));
+            Guard.ThrowIfValueIsNegative(timeout, nameof(timeout));
             Guard.ThrowIfNull(connectionProvider, nameof(connectionProvider));
 
             _resource = resource;

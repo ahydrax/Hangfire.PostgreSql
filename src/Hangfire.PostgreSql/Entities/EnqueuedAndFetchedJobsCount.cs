@@ -1,6 +1,9 @@
-﻿namespace Hangfire.PostgreSql.Entities
+﻿using Hangfire.Annotations;
+
+namespace Hangfire.PostgreSql.Entities
 {
-    public class EnqueuedAndFetchedJobsCount
+    [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
+    internal class EnqueuedAndFetchedJobsCount
     {
         public long Enqueued { get; set; }
         public long Fetched { get; set; }

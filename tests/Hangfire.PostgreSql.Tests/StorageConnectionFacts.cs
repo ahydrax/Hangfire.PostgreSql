@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using Dapper;
 using Hangfire.Common;
+using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Storage;
 using Hangfire.PostgreSql.Tests.Utils;
 using Hangfire.Server;
@@ -17,20 +18,24 @@ namespace Hangfire.PostgreSql.Tests
 {
     public class StorageConnectionFacts
     {
-        private readonly Mock<IJobQueue> _queue;
         private readonly PostgreSqlStorageOptions _options;
+        private readonly IJobQueue _queue;
+        private readonly IConnectionProvider _connectionProvider;
+        private readonly StorageConnection _storageConnection;
 
         public StorageConnectionFacts()
         {
-            _queue = new Mock<IJobQueue>();
+            _connectionProvider = ConnectionUtils.GetConnectionProvider();
             _options = new PostgreSqlStorageOptions();
+            _queue = new JobQueue(_connectionProvider, _options);
+            _storageConnection = new StorageConnection(_connectionProvider, _queue, _options);
         }
 
         [Fact]
         public void Ctor_ThrowsAnException_WhenConnectionIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new StorageConnection(null, _queue.Object, _options));
+                () => new StorageConnection(null, _queue, _options));
 
             Assert.Equal("connectionProvider", exception.ParamName);
         }
@@ -48,7 +53,7 @@ namespace Hangfire.PostgreSql.Tests
         public void Ctor_ThrowsAnException_WhenOptionsIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new StorageConnection(ConnectionUtils.GetConnectionProvider(), _queue.Object, null));
+                () => new StorageConnection(ConnectionUtils.GetConnectionProvider(), _queue, null));
 
             Assert.Equal("options", exception.ParamName);
         }
@@ -57,7 +62,7 @@ namespace Hangfire.PostgreSql.Tests
         public void Dispose_DoesNotDisposeTheConnection()
         {
             var sqlConnection = ConnectionUtils.GetConnectionProvider();
-            var connection = new StorageConnection(sqlConnection, _queue.Object, _options);
+            var connection = new StorageConnection(sqlConnection, _queue, _options);
 
             connection.Dispose();
 
@@ -67,25 +72,26 @@ namespace Hangfire.PostgreSql.Tests
         [Fact, CleanDatabase]
         public void FetchNextJob_DelegatesItsExecution_ToTheQueue()
         {
-            UseConnection(connection =>
-            {
-                var token = new CancellationToken();
-                var queues = new[] { "default" };
+            // Arrange
+            var queue = new Mock<IJobQueue>();
+            var storageConnection = new StorageConnection(_connectionProvider, queue.Object, _options);
+            var token = new CancellationToken();
+            var queues = new[] { "default" };
 
-                connection.FetchNextJob(queues, token);
+            // Act
+            storageConnection.FetchNextJob(queues, token);
 
-                _queue.Verify(x => x.Dequeue(queues, token));
-            });
+            // Assert
+            queue.Verify(x => x.Dequeue(queues, token));
         }
 
         [Fact, CleanDatabase]
         public void CreateWriteTransaction_ReturnsNonNullInstance()
         {
-            UseConnection(connection =>
+            using (var transaction = _storageConnection.CreateWriteTransaction())
             {
-                var transaction = connection.CreateWriteTransaction();
                 Assert.NotNull(transaction);
-            });
+            }
         }
 
         [Fact, CleanDatabase]
@@ -1272,7 +1278,7 @@ values (@key, @field, @value)";
         private void UseConnections(Action<NpgsqlConnection, StorageConnection> action)
         {
             var provider = ConnectionUtils.GetConnectionProvider();
-            using (var connection = new StorageConnection(provider, _queue.Object, _options))
+            using (var connection = new StorageConnection(provider, _queue, _options))
             {
                 using (var con = provider.AcquireConnection())
                 {
@@ -1285,7 +1291,7 @@ values (@key, @field, @value)";
         {
             using (var connection = new StorageConnection(
                 ConnectionUtils.GetConnectionProvider(),
-                _queue.Object,
+                _queue,
                 _options))
             {
                 action(connection);

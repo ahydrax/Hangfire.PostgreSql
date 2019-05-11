@@ -23,10 +23,12 @@ namespace Hangfire.PostgreSql
 
         public MonitoringApi(IConnectionProvider connectionProvider)
         {
-            _connectionProvider = connectionProvider ?? throw new ArgumentNullException(nameof(connectionProvider));
+            Guard.ThrowIfNull(connectionProvider, nameof(connectionProvider));
+
+            _connectionProvider = connectionProvider;
         }
 
-        public long ScheduledCount()
+        public long ScheduledCount() 
             => GetNumberOfJobsByStateName(ScheduledState.StateName);
 
         public long EnqueuedCount(string queue)
@@ -51,14 +53,8 @@ and queue = @queue
             return GetLong(queue, query);
         }
 
-        private long GetLong(string queue, string query)
-        {
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                var result = connectionHolder.Connection.ExecuteScalar<long>(query, new { queue = queue });
-                return result;
-            }
-        }
+        private long GetLong(string queue, string query) 
+            => _connectionProvider.FetchFirstOrDefault<long>(query, new { queue = queue });
 
         public long FailedCount()
             => GetNumberOfJobsByStateName(FailedState.StateName);

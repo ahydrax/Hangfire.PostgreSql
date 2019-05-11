@@ -14,22 +14,36 @@ namespace Hangfire.PostgreSql.Tests
 {
     public class DistributedLockFacts
     {
-        private readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
+        private readonly IConnectionProvider _connectionProvider;
+
+        public DistributedLockFacts()
+        {
+            _connectionProvider = ConnectionUtils.GetConnectionProvider();
+        }
 
         [Fact]
         public void Ctor_ThrowsAnException_WhenResourceIsNullOrEmpty()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new DistributedLock("", _timeout, new Mock<IConnectionProvider>().Object));
+                () => new DistributedLock("", TimeSpan.FromSeconds(1), _connectionProvider));
 
             Assert.Equal("resource", exception.ParamName);
         }
 
         [Fact]
-        public void Ctor_ThrowsAnException_WhenConnectionIsNull()
+        public void Ctor_ThrowsAnException_WhenTimeoutIsNegativeValue()
+        {
+            var exception = Assert.Throws<ArgumentException>(
+                () => new DistributedLock("hello", TimeSpan.FromSeconds(-1), _connectionProvider));
+
+            Assert.Equal("timeout", exception.ParamName);
+        }
+
+        [Fact]
+        public void Ctor_ThrowsAnException_WhenConnectionProviderIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new DistributedLock("hello", _timeout, null));
+                () => new DistributedLock("hello", TimeSpan.FromSeconds(1), null));
 
             Assert.Equal("connectionProvider", exception.ParamName);
         }
@@ -37,41 +51,43 @@ namespace Hangfire.PostgreSql.Tests
         [Fact, CleanDatabase]
         public void Ctor_AcquiresExclusiveApplicationLock()
         {
-            UseConnection((provider, connection) =>
+            // Arrange
+            using (new DistributedLock("hello", TimeSpan.FromSeconds(1), _connectionProvider))
             {
-                // ReSharper disable once UnusedVariable
-                var distributedLock = new DistributedLock("hello", _timeout, provider);
+                // Act
+                var lockCount = _connectionProvider.FetchFirstOrDefault<long>(
+                    @"select count(*) from lock where resource = @resource;",
+                    new { resource = "hello" });
 
-                var lockCount = connection.Query<long>(
-                    @"select count(*) from ""lock"" where ""resource"" = @resource",
-                    new { resource = "hello" }).Single();
-
+                // Assert
                 Assert.Equal(1, lockCount);
-            });
+            }
         }
 
         [Fact, CleanDatabase]
         public void Ctor_ThrowsAnException_IfLockCanNotBeGranted()
         {
+            // Arrange
+            var timeout = TimeSpan.FromSeconds(3);
             var releaseLock = new ManualResetEventSlim(false);
             var lockAcquired = new ManualResetEventSlim(false);
-
             var thread = new Thread(
-                () => UseConnection((provider, connection) =>
+                () =>
                 {
-                    using (new DistributedLock("exclusive", _timeout, provider))
+                    using (new DistributedLock("exclusive", timeout, _connectionProvider))
                     {
                         lockAcquired.Set();
                         releaseLock.Wait();
                     }
-                }));
-            thread.Start();
+                });
 
+            // Act
+            thread.Start();
             lockAcquired.Wait();
 
-            UseConnection((provider, connection) =>
-                Assert.Throws<DistributedLockTimeoutException>(
-                    () => new DistributedLock("exclusive", _timeout, provider)));
+            // Assert
+            Assert.Throws<DistributedLockTimeoutException>(
+                () => new DistributedLock("exclusive", timeout, _connectionProvider));
 
             releaseLock.Set();
             thread.Join();
@@ -80,28 +96,31 @@ namespace Hangfire.PostgreSql.Tests
         [Fact, CleanDatabase]
         public void Dispose_ReleasesExclusiveApplicationLock()
         {
-            UseConnection((provider, connection) =>
-            {
-                var distributedLock = new DistributedLock("hello", _timeout, provider);
-                distributedLock.Dispose();
+            // Arrange
+            var distributedLock = new DistributedLock("hello", TimeSpan.FromSeconds(1), _connectionProvider);
 
-                var lockCount = connection.Query<long>(
-                    @"select count(*) from """ + GetSchemaName() + @""".""lock"" where ""resource"" = @resource",
-                    new { resource = "hello" }).Single();
+            // Act
+            distributedLock.Dispose();
 
-                Assert.Equal(0, lockCount);
-            });
+            // Assert
+            var lockCount = _connectionProvider.FetchFirstOrDefault<long>(
+                @"select count(*) from lock where resource = @resource;",
+                new { resource = "hello" });
+
+            Assert.Equal(0, lockCount);
         }
 
-        private void UseConnection(Action<IConnectionProvider, NpgsqlConnection> action)
+        [Fact, CleanDatabase]
+        public void Dispose_ThrowsExceptionWhenLockWasDeletedExternally()
         {
-            var provider = ConnectionUtils.GetConnectionProvider();
-            using (var connection = provider.AcquireConnection())
-            {
-                action(provider, connection.Connection);
-            }
-        }
+            // Arrange
+            var distributedLock = new DistributedLock("hello", TimeSpan.FromSeconds(1), _connectionProvider);
 
-        private static string GetSchemaName() => ConnectionUtils.GetSchemaName();
+            // Act
+            _connectionProvider.Execute("delete from lock;");
+
+            // Assert
+            Assert.Throws<DistributedLockException>(() => distributedLock.Dispose());
+        }
     }
 }
