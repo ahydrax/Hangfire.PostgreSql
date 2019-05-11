@@ -67,22 +67,13 @@ namespace Hangfire.PostgreSql.Tests.Web
         }
 
         [Queue("queue1")]
-        public static void ContinuationPartA()
-        {
-            Thread.Sleep(TimeSpan.FromSeconds(5));
-        }
+        public static void ContinuationPartA() => Thread.Sleep(TimeSpan.FromSeconds(5));
 
         [AutomaticRetry(Attempts = 0)]
-        public static void ContinuationPartB()
-        {
-            throw new InvalidOperationException("TEST OK");
-        }
+        public static void ContinuationPartB() => throw new InvalidOperationException("TEST OK");
 
         [Queue("queue2")]
-        public static string ContinuationPartC()
-        {
-            return "DONE";
-        }
+        public static string ContinuationPartC() => "DONE";
 
         public static object TaskBurst()
         {

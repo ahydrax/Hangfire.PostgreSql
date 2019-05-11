@@ -36,7 +36,6 @@ namespace Hangfire.PostgreSql.Tests.Web
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.DistributedLocksCount);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.PostgreSqlLocksCount);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.PostgreSqlServerVersion);
-
                 configuration.UsePostgreSqlStorage(GetConnectionString());
             });
         }
@@ -49,8 +48,8 @@ namespace Hangfire.PostgreSql.Tests.Web
                 ServerCheckInterval = TimeSpan.FromSeconds(15),
                 HeartbeatInterval = TimeSpan.FromSeconds(5),
                 ServerTimeout = TimeSpan.FromSeconds(15),
-                ServerName = "Server default",
-                WorkerCount = 50,
+                ServerName = "Hangfire Test Server",
+                WorkerCount = 100,
                 Queues = new[] { "queue2", "queue1", "default" }
             });
 
