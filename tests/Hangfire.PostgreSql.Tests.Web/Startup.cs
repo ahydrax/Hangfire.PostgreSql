@@ -30,10 +30,10 @@ namespace Hangfire.PostgreSql.Tests.Web
             services.AddHangfire(configuration =>
             {
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.ActiveConnections);
-                configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.CacheHitsPerRead);
-                configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.ConnectionUsageRatio);
-                configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.DistributedLocksCount);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.MaxConnections);
+                configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.ConnectionUsageRatio);
+                configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.CacheHitsPerRead);
+                configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.DistributedLocksCount);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.PostgreSqlLocksCount);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.PostgreSqlServerVersion);
 

@@ -35,8 +35,8 @@ do update set data = @data, lastheartbeat = now() at time zone 'UTC'
         {
             Guard.ThrowIfNull(serverId, nameof(serverId));
 
-            const string query = @"update server set lastheartbeat = @heartbeat where id = @id;";
-            var parameters = new { id = serverId, heartbeat = DateTime.UtcNow };
+            const string query = @"update server set lastheartbeat = now() at time zone 'UTC' where id = @id;";
+            var parameters = new { id = serverId };
             _connectionProvider.Execute(query, parameters);
         }
 
