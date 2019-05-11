@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using Dapper;
+using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Maintenance;
 using Hangfire.PostgreSql.Tests.Utils;
 using Npgsql;
@@ -12,205 +13,169 @@ namespace Hangfire.PostgreSql.Tests
 {
     public class ExpirationManagerFacts
     {
-        private readonly CancellationToken _token;
+        private readonly IConnectionProvider _connectionProvider;
+        private readonly ExpirationManager _expirationManager;
+        private readonly CancellationTokenSource _tokenSource;
 
         public ExpirationManagerFacts()
         {
-            var cts = new CancellationTokenSource();
-            _token = cts.Token;
+            _connectionProvider = ConnectionUtils.GetConnectionProvider();
+            _expirationManager = new ExpirationManager(_connectionProvider, TimeSpan.FromMilliseconds(1));
+            _tokenSource = new CancellationTokenSource();
         }
 
         [Fact]
-        public void Ctor_ThrowsAnException_WhenStorageIsNull()
+        public void Ctor_ThrowsAnException_WhenConnectionProviderIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new ExpirationManager(null));
+            Assert.Throws<ArgumentNullException>(
+                () => new ExpirationManager(null));
+        }
+
+        [Fact]
+        public void Ctor_ThrowsAnException_WhenCheckIntervalIsZero()
+        {
+            Assert.Throws<ArgumentException>(
+                () => new ExpirationManager(_connectionProvider, TimeSpan.Zero));
+        }
+
+        [Fact]
+        public void Ctor_ThrowsAnException_WhenCheckIntervalIsNegative()
+        {
+            Assert.Throws<ArgumentException>(
+                () => new ExpirationManager(_connectionProvider, TimeSpan.FromSeconds(-1)));
         }
 
         [Fact, CleanDatabase]
         public void Execute_RemovesOutdatedRecords()
         {
-            using (var connection = CreateConnection())
-            {
-                var entryId = CreateExpirationEntry(connection, DateTime.UtcNow.AddMonths(-1));
-                var manager = CreateManager();
+            // Arrange
+            CreateCounterExpirationEntry(DateTime.UtcNow.AddDays(-1));
 
-                manager.Execute(_token);
+            // Act
+            _expirationManager.Execute(_tokenSource.Token);
 
-                Assert.True(IsEntryExpired(connection, entryId));
-            }
+            // Assert
+            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from counter");
+            Assert.Equal(0, recordsCount);
         }
 
         [Fact, CleanDatabase]
         public void Execute_DoesNotRemoveEntries_WithNoExpirationTimeSet()
         {
-            using (var connection = CreateConnection())
-            {
-                var entryId = CreateExpirationEntry(connection, null);
-                var manager = CreateManager();
+            // Arrange
+            CreateCounterExpirationEntry(null);
 
-                manager.Execute(_token);
+            // Act
+            _expirationManager.Execute(_tokenSource.Token);
 
-                Assert.False(IsEntryExpired(connection, entryId));
-            }
+            // Assert
+            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from counter");
+            Assert.Equal(1, recordsCount);
         }
 
         [Fact, CleanDatabase]
         public void Execute_DoesNotRemoveEntries_WithFreshExpirationTime()
         {
-            using (var connection = CreateConnection())
-            {
-                var entryId = CreateExpirationEntry(connection, DateTime.Now.AddMonths(1));
-                var manager = CreateManager();
+            // Arrange
+            CreateCounterExpirationEntry(DateTime.UtcNow.AddDays(1));
 
-                manager.Execute(_token);
+            // Act
+            _expirationManager.Execute(_tokenSource.Token);
 
-                Assert.False(IsEntryExpired(connection, entryId));
-            }
+            // Assert
+            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from counter");
+            Assert.Equal(1, recordsCount);
         }
 
         [Fact, CleanDatabase]
         public void Execute_Processes_CounterTable()
         {
-            using (var connection = CreateConnection())
-            {
-                // Arrange
-                string createSql = @"
-insert into """ + GetSchemaName() + @""".""counter"" (""key"", ""value"", ""expireat"") 
-values ('key', 1, @expireAt)";
-                connection.Execute(createSql, new { expireAt = DateTime.UtcNow.AddMonths(-1) });
+            // Arrange
+            CreateCounterExpirationEntry(DateTime.UtcNow.AddDays(-1));
 
-                var manager = CreateManager();
+            // Act
+            _expirationManager.Execute(_tokenSource.Token);
 
-                // Act
-                manager.Execute(_token);
+            // Assert
+            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from counter");
+            Assert.Equal(0, recordsCount);
+        }
 
-                // Assert
-                Assert.Equal(0,
-                    connection.Query<long>(@"select count(*) from """ + GetSchemaName() + @""".""counter""").Single());
-            }
+        private void CreateCounterExpirationEntry(DateTime? expireAt)
+        {
+            const string query = @"
+insert into counter(key, value, expireat)
+values ('key', 1, @expireat)";
+
+            _connectionProvider.Execute(query, new { expireat = expireAt });
         }
 
         [Fact, CleanDatabase]
         public void Execute_Processes_JobTable()
         {
-            using (var connection = CreateConnection())
-            {
-                // Arrange
-                string createSql = @"
-insert into """ + GetSchemaName() + @""".""job"" (""invocationdata"", ""arguments"", ""createdat"", ""expireat"") 
+            // Arrange
+            const string query = @"
+insert into job (invocationdata, arguments, createdat, expireat) 
 values ('', '', now() at time zone 'utc', @expireAt)";
-                connection.Execute(createSql, new { expireAt = DateTime.UtcNow.AddMonths(-1) });
+            _connectionProvider.Execute(query, new { expireAt = DateTime.UtcNow.AddDays(-1) });
 
-                var manager = CreateManager();
+            // Act
+            _expirationManager.Execute(_tokenSource.Token);
 
-                // Act
-                manager.Execute(_token);
-
-                // Assert
-                Assert.Equal(0,
-                    connection.Query<long>(@"select count(*) from """ + GetSchemaName() + @""".""job""").Single());
-            }
+            // Assert
+            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from job");
+            Assert.Equal(0, recordsCount);
         }
 
         [Fact, CleanDatabase]
         public void Execute_Processes_ListTable()
         {
-            using (var connection = CreateConnection())
-            {
-                // Arrange
-                string createSql = @"
-insert into """ + GetSchemaName() + @""".""list"" (""key"", ""expireat"") 
+            // Arrange
+            const string query = @"
+insert into list (key, expireat) 
 values ('key', @expireAt)";
-                connection.Execute(createSql, new { expireAt = DateTime.UtcNow.AddMonths(-1) });
+            _connectionProvider.Execute(query, new { expireAt = DateTime.UtcNow.AddDays(-1) });
 
-                var manager = CreateManager();
+            // Act
+            _expirationManager.Execute(_tokenSource.Token);
 
-                // Act
-                manager.Execute(_token);
-
-                // Assert
-                Assert.Equal(0,
-                    connection.Query<long>(@"select count(*) from """ + GetSchemaName() + @""".""list""").Single());
-            }
+            // Assert
+            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from list");
+            Assert.Equal(0, recordsCount);
         }
 
         [Fact, CleanDatabase]
         public void Execute_Processes_SetTable()
         {
-            using (var connection = CreateConnection())
-            {
-                // Arrange
-                string createSql = @"
-insert into """ + GetSchemaName() + @""".""set"" (""key"", ""score"", ""value"", ""expireat"") 
+            // Arrange
+            const string query = @"
+insert into set (key, score, value, expireat) 
 values ('key', 0, '', @expireAt)";
-                connection.Execute(createSql, new { expireAt = DateTime.UtcNow.AddMonths(-1) });
+            _connectionProvider.Execute(query, new { expireAt = DateTime.UtcNow.AddDays(-1) });
 
-                var manager = CreateManager();
+            // Act
+            _expirationManager.Execute(_tokenSource.Token);
 
-                // Act
-                manager.Execute(_token);
-
-                // Assert
-                Assert.Equal(0,
-                    connection.Query<long>(@"select count(*) from """ + GetSchemaName() + @""".""set""").Single());
-            }
+            // Assert
+            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from set");
+            Assert.Equal(0, recordsCount);
         }
 
         [Fact, CleanDatabase]
         public void Execute_Processes_HashTable()
         {
-            using (var connection = CreateConnection())
-            {
-                // Arrange
-                string createSql = @"
-insert into """ + GetSchemaName() + @""".""hash"" (""key"", ""field"", ""value"", ""expireat"") 
+            // Arrange
+            const string query = @"
+insert into hash (key, field, value, expireat) 
 values ('key', 'field', '', @expireAt)";
-                connection.Execute(createSql, new { expireAt = DateTime.UtcNow.AddMonths(-1) });
+            _connectionProvider.Execute(query, new { expireAt = DateTime.UtcNow.AddDays(-1) });
 
-                var manager = CreateManager();
+            // Act
+            _expirationManager.Execute(_tokenSource.Token);
 
-                // Act
-                manager.Execute(_token);
-
-                // Assert
-                Assert.Equal(0,
-                    connection.Query<long>(@"select count(*) from """ + GetSchemaName() + @""".""hash""").Single());
-            }
+            // Assert
+            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from set");
+            Assert.Equal(0, recordsCount);
         }
-
-        private static int CreateExpirationEntry(NpgsqlConnection connection, DateTime? expireAt)
-        {
-            string insertSqlNull = @"
-insert into """ + GetSchemaName() + @""".""counter""(""key"", ""value"", ""expireat"")
-values ('key', 1, null) returning ""id""";
-
-            string insertSqlValue = @"
-insert into """ + GetSchemaName() + @""".""counter""(""key"", ""value"", ""expireat"")
-values ('key', 1, now() at time zone 'utc' - interval '{0} seconds') returning ""id""";
-
-            string insertSql = expireAt == null
-                ? insertSqlNull
-                : string.Format(insertSqlValue,
-                    ((long)(DateTime.UtcNow - expireAt.Value).TotalSeconds).ToString(CultureInfo.InvariantCulture));
-
-            var id = connection.Query(insertSql).Single();
-            var recordId = (int)id.id;
-            return recordId;
-        }
-
-        private static bool IsEntryExpired(NpgsqlConnection connection, int entryId)
-        {
-            var count = connection.Query<long>(
-                    @"select count(*) from """ + GetSchemaName() + @""".""counter"" where ""id"" = @id",
-                    new { id = entryId })
-                .Single();
-            return count == 0;
-        }
-
-        private static NpgsqlConnection CreateConnection() => ConnectionUtils.CreateNpgConnection();
-
-        private static string GetSchemaName() => ConnectionUtils.GetSchemaName();
-
-        private static ExpirationManager CreateManager() => new ExpirationManager(ConnectionUtils.GetConnectionProvider(), TimeSpan.FromMilliseconds(1));
     }
 }

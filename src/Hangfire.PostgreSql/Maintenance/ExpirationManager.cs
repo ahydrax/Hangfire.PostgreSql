@@ -55,11 +55,7 @@ namespace Hangfire.PostgreSql.Maintenance
             {
                 Logger.DebugFormat("Removing outdated records from table '{0}'...", table);
 
-                // Pgsql doesn't support parameters for table names
-                // that's why you're going this 'awful' sql query interpolation
-                var query = $@"
-DELETE FROM {table}
-WHERE expireat < NOW() AT TIME ZONE 'UTC' ";
+                var query = $@"DELETE FROM {table} WHERE expireat IS NOT NULL AND expireat < NOW() AT TIME ZONE 'UTC';";
 
                 var removedCount = _connectionProvider.Execute(query);
                 if (removedCount > 0)

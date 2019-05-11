@@ -22,6 +22,20 @@ namespace Hangfire.PostgreSql.Connectivity
             }
         }
 
+        public static T Fetch<T>(this IConnectionProvider connectionProvider,
+            string sql,
+            object param = null,
+            IDbTransaction transaction = null,
+            int? commandTimeout = null,
+            CommandType? commandType = null)
+            where T : struct
+        {
+            using (var connectionHolder = connectionProvider.AcquireConnection())
+            {
+                return connectionHolder.Fetch<T>(sql, param, transaction, commandTimeout, commandType);
+            }
+        }
+
         public static List<T> FetchList<T>(this IConnectionProvider connectionProvider,
             string sql,
             object param = null,
