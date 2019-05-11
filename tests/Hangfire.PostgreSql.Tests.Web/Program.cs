@@ -10,9 +10,6 @@ namespace Hangfire.PostgreSql.Tests.Web
         public static void Main(string[] args) => 
             CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
-                .ConfigureLogging(loggingBuilder => 
-                    loggingBuilder.AddFilter<ConsoleLoggerProvider>(level => 
-                        level == LogLevel.None))
                 .Build()
                 .Run();
     }

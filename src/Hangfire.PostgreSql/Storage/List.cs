@@ -21,8 +21,7 @@ namespace Hangfire.PostgreSql.Storage
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"select count(id) from list where key = @key";
-
+            const string query = @"SELECT COUNT(id) FROM list WHERE key = @key";
             return _connectionProvider.FetchFirstOrDefault<long>(query, new { key = key });
         }
 
@@ -30,7 +29,8 @@ namespace Hangfire.PostgreSql.Storage
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"select min(expireat) from list where key = @key";
+            const string query = @"SELECT MIN(expireat) FROM list WHERE key = @key";
+
             var result = _connectionProvider.FetchFirstOrDefault<DateTime?>(query, new { key = key });
 
             return result.HasValue ? result.Value - DateTime.UtcNow : TimeSpan.FromSeconds(-1);
@@ -41,19 +41,19 @@ namespace Hangfire.PostgreSql.Storage
             Guard.ThrowIfNull(key, nameof(key));
 
             const string query = @"
-select ""value"" from (
-    select ""value"", row_number() over (order by ""id"" desc) as row_num 
-    from ""list""
-    where ""key"" = @key ) as s
-where s.row_num between @startingFrom and @endingAt";
+SELECT value FROM (
+    SELECT value, row_number() OVER (ORDER BY id DESC) AS row_num 
+    FROM list
+    WHERE key = @key ) AS s
+WHERE s.row_num BETWEEN @startingFrom AND @endingAt";
 
-            return _connectionProvider.FetchList<string>(query,
-                new
-                {
-                    key,
-                    startingFrom = startingFrom + 1,
-                    endingAt = endingAt + 1
-                });
+            var parameters = new
+            {
+                key = key,
+                startingFrom = startingFrom + 1,
+                endingAt = endingAt + 1
+            };
+            return _connectionProvider.FetchList<string>(query, parameters);
         }
     }
 }

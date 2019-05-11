@@ -55,37 +55,20 @@ namespace Hangfire.PostgreSql.Maintenance
             {
                 Logger.DebugFormat("Removing outdated records from table '{0}'...", table);
 
-                int removedCount;
-                do
-                {
-                    using (var connectionHolder = _connectionProvider.AcquireConnection())
-                    using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.ReadCommitted))
-                    {
-                        // Pgsql doesn't support parameters for table names
-                        // that's why you're going this 'awful' sql query interpolation
-                        var query = $@"
+                // Pgsql doesn't support parameters for table names
+                // that's why you're going this 'awful' sql query interpolation
+                var query = $@"
 DELETE FROM {table}
-WHERE id IN (
-    SELECT id
-    FROM {table}
-    WHERE expireat < NOW() AT TIME ZONE 'UTC' 
-    LIMIT {Convert.ToString(NumberOfRecordsInSinglePass, CultureInfo.InvariantCulture)}
-)";
-                        removedCount = connectionHolder.Execute(query, transaction: transaction);
-                        transaction.Commit();
-                    }
+WHERE expireat < NOW() AT TIME ZONE 'UTC' ";
 
-                    if (removedCount > 0)
-                    {
-                        Logger.InfoFormat("Removed {0} outdated record(s) from '{1}' table.", removedCount, table);
+                var removedCount = _connectionProvider.Execute(query);
+                if (removedCount > 0)
+                {
+                    Logger.InfoFormat("Removed {0} outdated record(s) from '{1}' table.", removedCount, table);
+                }
 
-                        cancellationToken.Wait(DelayBetweenPasses);
-                        cancellationToken.ThrowIfCancellationRequested();
-                    }
-                } while (removedCount != 0);
+                cancellationToken.Wait(_checkInterval);
             }
-
-            cancellationToken.Wait(_checkInterval);
         }
     }
 }

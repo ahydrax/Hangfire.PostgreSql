@@ -12,28 +12,23 @@ using Npgsql;
 
 namespace Hangfire.PostgreSql
 {
-    internal class WriteOnlyTransaction : JobStorageTransaction
+    internal sealed class WriteOnlyTransaction : JobStorageTransaction
     {
-        private readonly IJobQueue _queue;
         private readonly IConnectionProvider _connectionProvider;
         private readonly Queue<Action<NpgsqlConnection, NpgsqlTransaction>> _commandQueue;
 
-        public WriteOnlyTransaction(
-            IConnectionProvider connectionProvider,
-            IJobQueue queue)
+        public WriteOnlyTransaction(IConnectionProvider connectionProvider)
         {
             Guard.ThrowIfNull(connectionProvider, nameof(connectionProvider));
-            Guard.ThrowIfNull(queue, nameof(queue));
 
             _connectionProvider = connectionProvider;
-            _queue = queue;
             _commandQueue = new Queue<Action<NpgsqlConnection, NpgsqlTransaction>>();
         }
 
         public override void Commit()
         {
             using (var connectionHolder = _connectionProvider.AcquireConnection())
-            using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.RepeatableRead))
+            using (var transaction = connectionHolder.Connection.BeginTransaction(IsolationLevel.ReadCommitted))
             {
                 foreach (var command in _commandQueue)
                 {
@@ -337,7 +332,11 @@ DO UPDATE SET value = @value
             Guard.ThrowIfNull(key, nameof(key));
             Guard.ThrowIfNull(items, nameof(items));
 
-            const string query = @"INSERT INTO set (key, value, score) VALUES (@key, @value, 0.0)";
+            const string query = @"
+INSERT INTO set (key, value, score)
+VALUES (@key, @value, 0.0)
+ON CONFLICT (key, value)
+DO NOTHING";
 
             QueueCommand((connection, transaction) => connection.Execute(
                 query,

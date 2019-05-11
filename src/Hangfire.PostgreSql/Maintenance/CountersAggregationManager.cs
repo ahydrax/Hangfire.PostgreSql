@@ -80,10 +80,10 @@ namespace Hangfire.PostgreSql.Maintenance
             {
                 const string aggregateQuery = @"
 WITH aggregated_counters AS (
-DELETE FROM counter
-WHERE key = @counterName
-AND expireat IS NULL
-RETURNING *
+    DELETE FROM counter
+    WHERE key = @counterName
+    AND expireat IS NULL
+    RETURNING *
 )
 
 SELECT SUM(value) FROM aggregated_counters;

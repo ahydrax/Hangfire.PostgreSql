@@ -13,7 +13,7 @@ namespace Hangfire.PostgreSql.Storage
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"SELECT value FROM set WHERE key = @key;";
+            const string query = @"SELECT value FROM set WHERE key = @key ORDER BY score;";
             var result = _connectionProvider.FetchList<string>(query, new { key = key });
             return new HashSet<string>(result);
         }
@@ -32,7 +32,6 @@ ORDER BY score LIMIT 1;
 ";
             return _connectionProvider.FetchFirstOrDefault<string>(query, new { key, from = fromScore, to = toScore });
         }
-
 
         public override List<string> GetFirstByLowestScoreFromSet(string key, double fromScore, double toScore, int count)
         {
@@ -62,12 +61,12 @@ ORDER BY score LIMIT {count};";
             Guard.ThrowIfNull(key, nameof(key));
 
             const string query = @"
-select ""value"" from (
-    select ""value"", row_number() over (order by ""id"" ASC) as row_num 
-    from ""set""
-    where ""key"" = @key 
-    ) as s
-where s.row_num between @startingFrom and @endingAt";
+SELECT value FROM (
+    SELECT value, row_number() OVER (ORDER BY score ASC) AS row_num 
+    FROM set
+    WHERE key = @key 
+    ) AS s
+WHERE s.row_num BETWEEN @startingFrom AND @endingAt";
 
             return _connectionProvider.FetchList<string>(query,
                     new

@@ -13,7 +13,7 @@ namespace Hangfire.PostgreSql.Tests.Web
         private const string ConnectionStringVariableName = "Hangfire_PostgreSql_ConnectionString";
 
         private const string DefaultConnectionString =
-            @"Server=localhost;Port=5432;Database=hangfire_tests;User Id=postgres;Password=password;Search Path=hangfire";
+            @"Server=localhost;Port=5432;Database=hangfire_tests;User Id=postgres;Password=password;Search Path=hangfire;Maximum Pool Size=50";
 
         public static string GetConnectionString() => Environment.GetEnvironmentVariable(ConnectionStringVariableName) ?? DefaultConnectionString;
 
@@ -29,7 +29,6 @@ namespace Hangfire.PostgreSql.Tests.Web
             services.AddMvc();
             services.AddHangfire(configuration =>
             {
-                configuration.UseColouredConsoleLogProvider(LogLevel.Debug);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.ActiveConnections);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.CacheHitsPerRead);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.ConnectionUsageRatio);

@@ -30,14 +30,14 @@ namespace Hangfire.PostgreSql.Storage
         }
 
         public override IWriteOnlyTransaction CreateWriteTransaction()
-            => new WriteOnlyTransaction(_connectionProvider, _queue);
+            => new WriteOnlyTransaction(_connectionProvider);
 
         public override IDisposable AcquireDistributedLock(string resource, TimeSpan timeout)
             => new DistributedLock(resource, timeout, _connectionProvider);
 
         public override IFetchedJob FetchNextJob(string[] queues, CancellationToken cancellationToken)
         {
-            if (queues == null || queues.Length == 0) throw new ArgumentNullException(nameof(queues));
+            Guard.ThrowIfCollectionIsNullOrEmpty(queues, nameof(queues));
             return _queue.Dequeue(queues, cancellationToken);
         }
 
@@ -138,20 +138,13 @@ WHERE ""id"" = @id;
             Guard.ThrowIfNull(jobIdString, nameof(jobIdString));
 
             const string query = @"
-SELECT s.name ""Name"", s.reason ""Reason"", s.data ""Data""
+SELECT s.name AS Name, s.reason AS Reason, s.data AS Data
 FROM state s
-INNER JOIN job j on j.stateid = s.id
+INNER JOIN job j ON j.stateid = s.id
 WHERE j.id = @jobId;
 ";
 
-            SqlState sqlState;
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                sqlState = connectionHolder.Connection
-                    .Query<SqlState>(query, new { jobId = JobId.ToLong(jobIdString) })
-                    .SingleOrDefault();
-            }
-
+            var sqlState = _connectionProvider.FetchFirstOrDefault<SqlState>(query, new { jobId = JobId.ToLong(jobIdString) });
             if (sqlState == null) return null;
 
             return new StateData
@@ -174,11 +167,8 @@ ON CONFLICT (jobid, name)
 DO UPDATE SET value = @value
 ";
 
-            using (var connectionHolder = _connectionProvider.AcquireConnection())
-            {
-                var parameters = new { jobId = JobId.ToLong(id), name, value };
-                connectionHolder.Connection.Execute(query, parameters);
-            }
+            var parameters = new { jobId = JobId.ToLong(id), name, value };
+            _connectionProvider.Execute(query, parameters);
         }
 
         public override string GetJobParameter(string id, string name)
@@ -195,7 +185,7 @@ DO UPDATE SET value = @value
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"select sum(value) from counter where key = @key";
+            const string query = @"SELECT SUM(value) FROM counter WHERE key = @key";
             return _connectionProvider.FetchFirstOrDefault<long?>(query, new { key }) ?? 0;
         }
     }

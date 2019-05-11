@@ -26,18 +26,9 @@ namespace Hangfire.PostgreSql.Tests
         public void Ctor_ThrowsAnException_IfConnectionIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new WriteOnlyTransaction(null, _queue.Object));
+                () => new WriteOnlyTransaction(null));
 
             Assert.Equal("connectionProvider", exception.ParamName);
-        }
-
-        [Fact, CleanDatabase]
-        public void Ctor_ThrowsAnException_IfQueueIsNull()
-        {
-            var exception = Assert.Throws<ArgumentNullException>(
-                () => new WriteOnlyTransaction(ConnectionUtils.GetConnectionProvider(), null));
-
-            Assert.Equal("queue", exception.ParamName);
         }
 
         [Fact, CleanDatabase]
@@ -989,7 +980,7 @@ returning ""id""";
 
         private void Commit(IConnectionProvider provider, Action<WriteOnlyTransaction> action)
         {
-            using (var transaction = new WriteOnlyTransaction(provider, _queue.Object))
+            using (var transaction = new WriteOnlyTransaction(provider))
             {
                 action(transaction);
                 transaction.Commit();
