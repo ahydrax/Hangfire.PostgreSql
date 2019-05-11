@@ -32,7 +32,7 @@ WHERE key = @key
         {
             Guard.ThrowIfNull(key, nameof(key));
 
-            const string query = @"SELECT COUNT(id) FROM hash WHERE key = @key";
+            const string query = @"SELECT COUNT(*) FROM hash WHERE key = @key";
 
             return _connectionProvider.FetchFirstOrDefault<long>(query, new { key });
         }
