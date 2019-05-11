@@ -1,63 +1,43 @@
 ﻿using System;
-using System.Linq;
 using System.Threading;
 using Dapper;
+using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Maintenance;
 using Hangfire.PostgreSql.Tests.Utils;
-using Npgsql;
 using Xunit;
 
 namespace Hangfire.PostgreSql.Tests
 {
     public class CountersAggregationManagerFacts
     {
-        private readonly CancellationToken _token;
-        private readonly PostgreSqlStorageOptions _options;
+        private readonly IConnectionProvider _connectionProvider;
+        private readonly CountersAggregationManager _manager;
 
         public CountersAggregationManagerFacts()
         {
-            var cts = new CancellationTokenSource();
-            _token = cts.Token;
-            _options = new PostgreSqlStorageOptions();
+            _connectionProvider = ConnectionUtils.GetConnectionProvider();
+            _manager = new CountersAggregationManager(_connectionProvider, TimeSpan.FromMilliseconds(1));
         }
 
         [Fact, CleanDatabase]
         public void Execute_Aggregates_CounterTable()
         {
-            using (var connection = CreateConnection())
+            // Arrange
+            const string createSql = @"insert into counter (key, value) values ('stats:succeeded', 1)";
+            const int sum = 5;
+            for (int i = 0; i < sum; i++)
             {
-                // Arrange
-                var createSql = $@"
-insert into ""counter"" (""key"", ""value"") 
-values ('stats:succeeded', 1)";
-                for (int i = 0; i < 5; i++)
-                {
-                    connection.Execute(createSql);
-                }
-
-                var manager = CreateManager();
-
-                // Act
-                manager.Execute(_token);
-
-                // Assert
-                Assert.Equal(1,
-                    connection.Query<long>(@"select count(*) from ""counter""").Single());
-                Assert.Equal(5,
-                    connection.Query<long>(@"select sum(value) from ""counter""")
-                        .Single());
+                _connectionProvider.Execute(createSql);
             }
-        }
 
-        private NpgsqlConnection CreateConnection()
-        {
-            return ConnectionUtils.CreateNpgConnection();
-        }
+            // Act
+            _manager.Execute(CancellationToken.None);
 
-        private CountersAggregationManager CreateManager()
-        {
-            var connectionProvider = ConnectionUtils.GetConnectionProvider();
-            return new CountersAggregationManager(connectionProvider, TimeSpan.FromSeconds(1));
+            // Assert
+            const string checkQuery = @"select count(*), sum(value) from counter";
+            var (recordsCount, recordsValue) = _connectionProvider.FetchFirstOrDefault<(long, long)>(checkQuery);
+            Assert.Equal(1, recordsCount);
+            Assert.Equal(sum, recordsValue);
         }
     }
 }
