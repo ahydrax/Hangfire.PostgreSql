@@ -5,6 +5,9 @@ using Npgsql;
 
 namespace Hangfire.PostgreSql
 {
+    /// <summary>
+    /// Contains extension methods for configuring storage.
+    /// </summary>
     public static class PostgreSqlBootstrapperConfigurationExtensions
     {
         /// <summary>

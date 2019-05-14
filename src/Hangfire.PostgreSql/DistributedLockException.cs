@@ -1,4 +1,6 @@
 using System;
+using System.Runtime.Serialization;
+using Hangfire.Annotations;
 
 namespace Hangfire.PostgreSql
 {
@@ -11,5 +13,9 @@ namespace Hangfire.PostgreSql
         /// <inheritdoc/>
         public DistributedLockException(string message)
             : base(message) { }
+
+        /// <inheritdoc/>
+        protected DistributedLockException([NotNull] SerializationInfo info, StreamingContext context)
+            : base(info, context) { }
     }
 }

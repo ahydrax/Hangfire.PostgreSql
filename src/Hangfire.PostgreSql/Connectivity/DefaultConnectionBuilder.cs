@@ -3,6 +3,9 @@ using Npgsql;
 
 namespace Hangfire.PostgreSql.Connectivity
 {
+    /// <summary>
+    /// Default implementation for connection bootstrapper.
+    /// </summary>
     public class DefaultConnectionBuilder : IConnectionBuilder
     {
         private readonly Action<NpgsqlConnection> _connectionSetup;

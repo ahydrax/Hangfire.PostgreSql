@@ -30,9 +30,6 @@ namespace Hangfire.PostgreSql.Storage
             _queue = queue;
         }
 
-        // leave empty as we don't share any state
-        public override void Dispose() { }
-
         public override IWriteOnlyTransaction CreateWriteTransaction()
             => new WriteOnlyTransaction(_connectionProvider);
 
@@ -49,11 +46,11 @@ namespace Hangfire.PostgreSql.Storage
             Job job,
             IDictionary<string, string> parameters,
             DateTime createdAt,
-            TimeSpan expiresIn)
+            TimeSpan expireIn)
         {
             Guard.ThrowIfNull(job, nameof(job));
             Guard.ThrowIfNull(parameters, nameof(parameters));
-            Guard.ThrowIfValueIsNotPositive(expiresIn, nameof(expiresIn));
+            Guard.ThrowIfValueIsNotPositive(expireIn, nameof(expireIn));
 
             const string createJobSql = @"
 insert into job (invocationdata, arguments, createdat, expireat)
@@ -70,7 +67,7 @@ returning id;
                     invocationData = SerializationHelper.Serialize(invocationData),
                     arguments = invocationData.Arguments,
                     createdAt = createdAt,
-                    expireAt = createdAt.Add(expiresIn)
+                    expireAt = createdAt.Add(expireIn)
                 };
                 var jobId = connectionHolder.FetchFirstOrDefault<long>(createJobSql, createJobParameters, transaction);
 
@@ -94,17 +91,16 @@ values (@jobId, @name, @value);
             }
         }
 
-        public override JobData GetJobData(string jobIdString)
+        public override JobData GetJobData(string jobId)
         {
-            Guard.ThrowIfNull(jobIdString, nameof(jobIdString));
-            var jobId = JobId.ToLong(jobIdString);
+            Guard.ThrowIfNull(jobId, nameof(jobId));
 
             const string sql = @"
 select invocationdata as invocationData, statename as stateName, arguments, createdat as createdAt
 from job 
 where id = @id;
 ";
-            var jobData = _connectionProvider.FetchFirstOrDefault<SqlJob>(sql, new { id = jobId });
+            var jobData = _connectionProvider.FetchFirstOrDefault<SqlJob>(sql, new { id = JobId.ToLong(jobId) });
 
             if (jobData == null) return null;
 
@@ -135,9 +131,9 @@ where id = @id;
             };
         }
 
-        public override StateData GetStateData(string jobIdString)
+        public override StateData GetStateData(string jobId)
         {
-            Guard.ThrowIfNull(jobIdString, nameof(jobIdString));
+            Guard.ThrowIfNull(jobId, nameof(jobId));
 
             const string query = @"
 select s.name as Name, s.reason as Reason, s.data as Data
@@ -146,7 +142,7 @@ inner join job j on j.stateid = s.id
 where j.id = @jobId;
 ";
 
-            var sqlState = _connectionProvider.FetchFirstOrDefault<SqlState>(query, new { jobId = JobId.ToLong(jobIdString) });
+            var sqlState = _connectionProvider.FetchFirstOrDefault<SqlState>(query, new { jobId = JobId.ToLong(jobId) });
             if (sqlState == null) return null;
 
             return new StateData

@@ -10,8 +10,10 @@ namespace Hangfire.PostgreSql.Tests.Web
         struct DummyStruct
         {
             public int A;
+#pragma warning disable 649 // used only for payload
             public int B;
             public int C;
+#pragma warning restore 649
         }
 
         public static void Alloc()
