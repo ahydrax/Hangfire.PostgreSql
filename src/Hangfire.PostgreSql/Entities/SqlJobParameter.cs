@@ -3,7 +3,7 @@
 namespace Hangfire.PostgreSql.Entities
 {
     [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
-    internal class JobParameter
+    internal class SqlJobParameter
     {
         public long JobId { get; set; }
         public string Name { get; set; }

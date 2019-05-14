@@ -28,7 +28,7 @@ namespace Hangfire.PostgreSql
             _connectionProvider = connectionProvider;
         }
 
-        public long ScheduledCount() 
+        public long ScheduledCount()
             => GetNumberOfJobsByStateName(ScheduledState.StateName);
 
         public long EnqueuedCount(string queue)
@@ -53,7 +53,7 @@ and queue = @queue
             return GetLong(queue, query);
         }
 
-        private long GetLong(string queue, string query) 
+        private long GetLong(string queue, string query)
             => _connectionProvider.FetchFirstOrDefault<long>(query, new { queue = queue });
 
         public long FailedCount()
@@ -182,49 +182,50 @@ and queue = @queue
 
         public JobDetailsDto JobDetails(string jobId)
         {
-            const string sql = @"
-select id ""Id"", 
-       invocationdata ""InvocationData"", 
-       arguments ""Arguments"", 
-       createdat ""CreatedAt"", 
-       expireat ""ExpireAt"" 
+            const string jobSql = @"
+select id as Id, 
+       invocationdata as InvocationData, 
+       arguments as Arguments,
+       createdat as CreatedAt,
+       expireat as ExpireAt
 from job
-where id = @id;
+where id = @id;";
 
-select jobid ""JobId"", 
-       name ""Name"",
-       value ""Value"" 
+            const string parametersSql = @"
+select jobid as JobId, 
+       name as Name,
+       value as Value
 from jobparameter 
-where jobid = @id;
+where jobid = @id;";
 
-select jobid ""JobId"", 
-       name ""Name"", 
-       reason ""Reason"", 
-       createdat ""CreatedAt"", 
-       data ""Data"" 
+            const string stateSql = @"
+select jobid as JobId, 
+       name as Name, 
+       reason as Reason, 
+       createdat as CreatedAt, 
+       data as Data
 from state 
 where jobid = @id 
-order by id desc;
-";
-            var sqlParameters = new { id = Convert.ToInt32(jobId, CultureInfo.InvariantCulture) };
+order by id desc;";
 
+            var sqlParameters = new { id = JobId.ToLong(jobId) };
             using (var connectionHolder = _connectionProvider.AcquireConnection())
-            using (var multi = connectionHolder.Connection.QueryMultiple(sql, sqlParameters))
             {
-                var job = multi.Read<SqlJob>().SingleOrDefault();
-                if (job == null) return null;
+                var job = connectionHolder.Fetch<SqlJob>(jobSql, sqlParameters);
 
-                var parameters = multi.Read<JobParameter>().ToDictionary(x => x.Name, x => x.Value);
-                var history = multi.Read<SqlState>()
-                                   .ToList()
-                                   .Select(x => new StateHistoryDto
-                                   {
-                                       StateName = x.Name,
-                                       CreatedAt = x.CreatedAt,
-                                       Reason = x.Reason,
-                                       Data = SerializationHelper.Deserialize<Dictionary<string, string>>(x.Data)
-                                   })
-                                   .ToList();
+                var parameters = connectionHolder
+                    .FetchList<SqlJobParameter>(parametersSql, sqlParameters)
+                    .ToDictionary(x => x.Name, x => x.Value);
+
+                var history = connectionHolder
+                    .FetchList<SqlState>(stateSql, sqlParameters)
+                    .SelectToList(x => new StateHistoryDto
+                    {
+                        StateName = x.Name,
+                        CreatedAt = x.CreatedAt,
+                        Reason = x.Reason,
+                        Data = SerializationHelper.Deserialize<Dictionary<string, string>>(x.Data)
+                    });
 
                 return new JobDetailsDto
                 {
@@ -247,14 +248,14 @@ order by id desc;
             var statistics = new StatisticsDto();
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
-                statistics.Enqueued = connectionHolder.Fetch<long>("select count(*) from job where statename = 'Enqueued';");
-                statistics.Failed = connectionHolder.Fetch<long>("select count(*) from job where statename = 'Failed';");
-                statistics.Processing = connectionHolder.Fetch<long>("select count(*) from job where statename = 'Processing';");
-                statistics.Scheduled = connectionHolder.Fetch<long>("select count(*) from job where statename = 'Scheduled';");
-                statistics.Servers = connectionHolder.Fetch<long>("select count(*) from server;");
-                statistics.Succeeded = connectionHolder.Fetch<long>("select sum(value) from counter where key = 'stats:succeeded';");
-                statistics.Deleted = connectionHolder.Fetch<long>("select sum(value) from counter where key = 'stats:deleted';");
-                statistics.Recurring = connectionHolder.Fetch<long>("select count(*) from set where key = 'recurring-jobs';");
+                statistics.Enqueued = connectionHolder.FetchScalar<long>("select count(*) from job where statename = 'Enqueued';");
+                statistics.Failed = connectionHolder.FetchScalar<long>("select count(*) from job where statename = 'Failed';");
+                statistics.Processing = connectionHolder.FetchScalar<long>("select count(*) from job where statename = 'Processing';");
+                statistics.Scheduled = connectionHolder.FetchScalar<long>("select count(*) from job where statename = 'Scheduled';");
+                statistics.Servers = connectionHolder.FetchScalar<long>("select count(*) from server;");
+                statistics.Succeeded = connectionHolder.FetchScalar<long>("select sum(value) from counter where key = 'stats:succeeded';");
+                statistics.Deleted = connectionHolder.FetchScalar<long>("select sum(value) from counter where key = 'stats:deleted';");
+                statistics.Recurring = connectionHolder.FetchScalar<long>("select count(*) from set where key = 'recurring-jobs';");
                 statistics.Queues = GetQueues().LongCount();
             }
             return statistics;

@@ -28,6 +28,19 @@ namespace Hangfire.PostgreSql.Connectivity
             IDbTransaction transaction = null,
             int? commandTimeout = null,
             CommandType? commandType = null)
+            => connectionHolder.Connection.QueryFirstOrDefault<T>(
+                   sql,
+                   param,
+                   transaction,
+                   commandTimeout,
+                   commandType);
+
+        public static T FetchScalar<T>(this ConnectionHolder connectionHolder,
+            string sql,
+            object param = null,
+            IDbTransaction transaction = null,
+            int? commandTimeout = null,
+            CommandType? commandType = null)
             where T : struct
             => connectionHolder.Connection.QueryFirstOrDefault<T?>(
                    sql,

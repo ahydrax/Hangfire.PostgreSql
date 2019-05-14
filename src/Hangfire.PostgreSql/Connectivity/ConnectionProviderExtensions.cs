@@ -37,7 +37,7 @@ namespace Hangfire.PostgreSql.Connectivity
         {
             using (var connectionHolder = connectionProvider.AcquireConnection())
             {
-                return connectionHolder.Fetch<T>(
+                return connectionHolder.FetchScalar<T>(
                     sql,
                     param,
                     transaction,

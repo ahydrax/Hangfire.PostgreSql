@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Hangfire.Common;
 using Hangfire.PostgreSql.Entities;
 using Hangfire.Storage;
@@ -8,6 +9,16 @@ namespace Hangfire.PostgreSql
 {
     internal static class Utils
     {
+        public static List<TOut> SelectToList<TIn, TOut>(this List<TIn> collection, Func<TIn, TOut> projector)
+        {
+            var result = new List<TOut>(collection.Count);
+            for (var i = 0; i < collection.Count; i++)
+            {
+                result.Add(projector(collection[i]));
+            }
+            return result;
+        }
+
         public delegate TDto JobSelector<TDto>(SqlJob sqlJob, Job job, Dictionary<string, string> state);
 
         public static JobList<TDto> DeserializeJobs<TDto>(ICollection<SqlJob> jobs, JobSelector<TDto> selector)

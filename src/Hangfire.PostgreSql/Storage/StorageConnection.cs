@@ -69,7 +69,7 @@ returning id;
                     createdAt = createdAt,
                     expireAt = createdAt.Add(expireIn)
                 };
-                var jobId = connectionHolder.Fetch<long>(createJobSql, createJobParameters, transaction);
+                var jobId = connectionHolder.FetchScalar<long>(createJobSql, createJobParameters, transaction);
 
                 if (parameters.Count > 0)
                 {

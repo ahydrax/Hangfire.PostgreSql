@@ -41,7 +41,7 @@ where acquired < current_timestamp at time zone 'UTC' - @timeout";
             var locksRemoved = _connectionProvider.Execute(query, new { timeout = _lockTimeOut });
             if (locksRemoved > 0)
             {
-                Logger.InfoFormat("{0} expired locks removed.");
+                Logger.InfoFormat("{0} expired locks removed.", locksRemoved);
             }
 
             cancellationToken.Wait(_lockTimeOut);
