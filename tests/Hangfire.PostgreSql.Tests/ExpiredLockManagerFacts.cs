@@ -17,12 +17,12 @@ namespace Hangfire.PostgreSql.Tests
             UseConnection((provider, connection) =>
             {
                 // Arrange
-                var timeout = TimeSpan.FromSeconds(7);
+                var timeout = TimeSpan.FromSeconds(5);
                 connection.Execute(@"insert into lock(resource, acquired) values ('fresh_lock', now() at time zone 'UTC')");
                 connection.Execute(@"insert into lock(resource, acquired) values ('expired_lock', now() at time zone 'UTC' - @timeout)", new { timeout });
 
                 // Act
-                var expiredLocksManager = new ExpiredLocksManager(provider, timeout);
+                var expiredLocksManager = new ExpiredLocksManager(provider, timeout - TimeSpan.FromSeconds(1));
                 expiredLocksManager.Execute(CancellationToken.None);
 
                 // Assert

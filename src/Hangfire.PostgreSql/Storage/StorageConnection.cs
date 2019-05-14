@@ -69,7 +69,7 @@ returning id;
                     createdAt = createdAt,
                     expireAt = createdAt.Add(expireIn)
                 };
-                var jobId = connectionHolder.FetchFirstOrDefault<long>(createJobSql, createJobParameters, transaction);
+                var jobId = connectionHolder.Fetch<long>(createJobSql, createJobParameters, transaction);
 
                 if (parameters.Count > 0)
                 {
@@ -184,7 +184,7 @@ do update set value = @value
             Guard.ThrowIfNull(key, nameof(key));
 
             const string query = @"select sum(value) from counter where key = @key";
-            return _connectionProvider.FetchFirstOrDefault<long?>(query, new { key }) ?? 0;
+            return _connectionProvider.Fetch<long>(query, new { key });
         }
     }
 }

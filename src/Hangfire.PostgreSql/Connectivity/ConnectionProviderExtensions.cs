@@ -18,7 +18,12 @@ namespace Hangfire.PostgreSql.Connectivity
         {
             using (var connectionHolder = connectionProvider.AcquireConnection())
             {
-                return connectionHolder.Connection.Execute(sql, param, transaction, commandTimeout, commandType);
+                return connectionHolder.Connection.Execute(
+                    sql,
+                    param,
+                    transaction,
+                    commandTimeout,
+                    commandType);
             }
         }
 
@@ -32,7 +37,12 @@ namespace Hangfire.PostgreSql.Connectivity
         {
             using (var connectionHolder = connectionProvider.AcquireConnection())
             {
-                return connectionHolder.Fetch<T>(sql, param, transaction, commandTimeout, commandType);
+                return connectionHolder.Fetch<T>(
+                    sql,
+                    param,
+                    transaction,
+                    commandTimeout,
+                    commandType);
             }
         }
 
@@ -45,7 +55,13 @@ namespace Hangfire.PostgreSql.Connectivity
         {
             using (var connectionHolder = connectionProvider.AcquireConnection())
             {
-                var result = connectionHolder.Connection.Query<T>(sql, param, transaction, true, commandTimeout, commandType);
+                var result = connectionHolder.Connection.Query<T>(
+                    sql,
+                    param,
+                    transaction,
+                    true,
+                    commandTimeout,
+                    commandType);
                 return result as List<T> ?? new List<T>(result);
             }
         }
@@ -59,7 +75,11 @@ namespace Hangfire.PostgreSql.Connectivity
         {
             using (var connectionHolder = connectionProvider.AcquireConnection())
             {
-                return connectionHolder.Connection.QueryFirstOrDefault<T>(sql, param, transaction, commandTimeout,
+                return connectionHolder.Connection.QueryFirstOrDefault<T>(
+                    sql,
+                    param,
+                    transaction,
+                    commandTimeout,
                     commandType);
             }
         }
