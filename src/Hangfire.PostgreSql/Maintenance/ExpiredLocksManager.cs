@@ -2,6 +2,7 @@
 using System.Threading;
 using Dapper;
 using Hangfire.Common;
+using Hangfire.Logging;
 using Hangfire.PostgreSql.Connectivity;
 using Hangfire.Server;
 
@@ -11,6 +12,8 @@ namespace Hangfire.PostgreSql.Maintenance
     internal sealed class ExpiredLocksManager : IBackgroundProcess, IServerComponent
 #pragma warning restore 618
     {
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(ExpiredLocksManager));
+
         private readonly IConnectionProvider _connectionProvider;
         private readonly TimeSpan _lockTimeOut;
 
@@ -35,7 +38,11 @@ namespace Hangfire.PostgreSql.Maintenance
 delete from lock
 where acquired < current_timestamp at time zone 'UTC' - @timeout";
 
-            _connectionProvider.Execute(query, new { timeout = _lockTimeOut });
+            var locksRemoved = _connectionProvider.Execute(query, new { timeout = _lockTimeOut });
+            if (locksRemoved > 0)
+            {
+                Logger.InfoFormat("{0} expired locks removed.");
+            }
 
             cancellationToken.Wait(_lockTimeOut);
         }

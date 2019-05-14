@@ -14,9 +14,6 @@ namespace Hangfire.PostgreSql.Maintenance
     internal sealed class ExpirationManager : IBackgroundProcess, IServerComponent
 #pragma warning restore 618
     {
-        private static readonly TimeSpan DelayBetweenPasses = TimeSpan.FromSeconds(1);
-        private const int NumberOfRecordsInSinglePass = 1000;
-
         private static readonly ILog Logger = LogProvider.GetLogger(typeof(ExpirationManager));
 
         private static readonly string[] ProcessedTables =
