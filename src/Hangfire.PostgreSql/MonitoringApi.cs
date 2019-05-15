@@ -248,10 +248,19 @@ order by id desc;";
             var statistics = new StatisticsDto();
             using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
-                statistics.Enqueued = connectionHolder.FetchScalar<long>("select count(*) from job where statename = 'Enqueued';");
-                statistics.Failed = connectionHolder.FetchScalar<long>("select count(*) from job where statename = 'Failed';");
-                statistics.Processing = connectionHolder.FetchScalar<long>("select count(*) from job where statename = 'Processing';");
-                statistics.Scheduled = connectionHolder.FetchScalar<long>("select count(*) from job where statename = 'Scheduled';");
+                const string stateSql = @"
+select statename, count(statename)
+from job
+where statename in ('Enqueued', 'Failed', 'Processing', 'Scheduled')
+group by statename;
+";
+
+                var stateCounters = connectionHolder.FetchList<(string name, long count)>(stateSql);
+                statistics.Enqueued = stateCounters.FirstOrDefault(x => x.name == "Enqueued").count;
+                statistics.Failed = stateCounters.FirstOrDefault(x => x.name == "Failed").count;
+                statistics.Processing = stateCounters.FirstOrDefault(x => x.name == "Processing").count;
+                statistics.Scheduled = stateCounters.FirstOrDefault(x => x.name == "Scheduled").count;
+
                 statistics.Servers = connectionHolder.FetchScalar<long>("select count(*) from server;");
                 statistics.Succeeded = connectionHolder.FetchScalar<long>("select sum(value) from counter where key = 'stats:succeeded';");
                 statistics.Deleted = connectionHolder.FetchScalar<long>("select sum(value) from counter where key = 'stats:deleted';");
