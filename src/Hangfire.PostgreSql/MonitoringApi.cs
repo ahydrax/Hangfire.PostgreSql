@@ -252,20 +252,31 @@ order by id desc;";
 select statename, count(statename)
 from job
 where statename in ('Enqueued', 'Failed', 'Processing', 'Scheduled')
-group by statename;
-";
-
+group by statename;";
                 var stateCounters = connectionHolder.FetchList<(string name, long count)>(stateSql);
                 statistics.Enqueued = stateCounters.FirstOrDefault(x => x.name == "Enqueued").count;
                 statistics.Failed = stateCounters.FirstOrDefault(x => x.name == "Failed").count;
                 statistics.Processing = stateCounters.FirstOrDefault(x => x.name == "Processing").count;
                 statistics.Scheduled = stateCounters.FirstOrDefault(x => x.name == "Scheduled").count;
 
-                statistics.Servers = connectionHolder.FetchScalar<long>("select count(*) from server;");
-                statistics.Succeeded = connectionHolder.FetchScalar<long>("select sum(value) from counter where key = 'stats:succeeded';");
-                statistics.Deleted = connectionHolder.FetchScalar<long>("select sum(value) from counter where key = 'stats:deleted';");
-                statistics.Recurring = connectionHolder.FetchScalar<long>("select count(*) from set where key = 'recurring-jobs';");
+                const string countersSql = @"
+select key, sum(value)
+from counter
+where key in ('stats:succeeded', 'stats:deleted')
+group by key;";
+                var counters = connectionHolder.FetchList<(string key, long count)>(countersSql);
+                statistics.Succeeded = counters.FirstOrDefault(x => x.key == "stats:succeeded").count;
+                statistics.Deleted = counters.FirstOrDefault(x => x.key == "stats:deleted").count;
+
+                const string recurringSql = @"
+select count(key)
+from set
+where key = 'recurring-jobs';";
+                statistics.Recurring = connectionHolder.FetchScalar<long>(recurringSql);
+
                 statistics.Queues = GetQueues().LongCount();
+
+                statistics.Servers = connectionHolder.FetchScalar<long>("select count(id) from server;");
             }
             return statistics;
         }

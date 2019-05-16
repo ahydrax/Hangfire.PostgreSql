@@ -184,7 +184,7 @@ do update set value = @value
             Guard.ThrowIfNull(key, nameof(key));
 
             const string query = @"select sum(value) from counter where key = @key";
-            return _connectionProvider.Fetch<long>(query, new { key });
+            return _connectionProvider.FetchScalar<long>(query, new { key });
         }
     }
 }

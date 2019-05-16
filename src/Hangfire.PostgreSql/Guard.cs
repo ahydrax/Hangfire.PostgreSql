@@ -21,6 +21,14 @@ namespace Hangfire.PostgreSql
                 throw new ArgumentNullException(argumentName);
         }
 
+        [ContractAnnotation("condition:true => halt")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ThrowIf([NotNull] bool condition, [NotNull] string message)
+        {
+            if (condition)
+                throw new ArgumentException(message);
+        }
+
         [ContractAnnotation("argument:null => halt")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ThrowIfNullOrEmpty([NotNull] string argument, [NotNull] string argumentName)
@@ -48,7 +56,7 @@ namespace Hangfire.PostgreSql
             if (connectionStringBuilder.Host == null) throw new ArgumentException(HostHasNotFoundExceptionMessage);
             if (connectionStringBuilder.SearchPath == null) throw new ArgumentException(SearchPathIsNotSpecified);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ThrowIfValueIsNotPositive(TimeSpan value, [NotNull] string fieldName)
         {
@@ -68,7 +76,7 @@ namespace Hangfire.PostgreSql
         public static void ThrowIfValueIsNegative(TimeSpan value, [NotNull] string fieldName)
         {
             var message = $"The {fieldName} property value must be zero or positive value. Given: {value}.";
-            
+
             if (value != value.Duration())
             {
                 throw new ArgumentException(message, fieldName);

@@ -13,10 +13,7 @@ namespace Hangfire.PostgreSql.Tests.Web
         private const string ConnectionStringVariableName = "Hangfire_PostgreSql_ConnectionString";
 
         private const string DefaultConnectionString =
-            @"Server=localhost;Port=5432;Database=hangfire_tests;User Id=postgres;Password=password;Search Path=hangfire;Maximum Pool Size=10";
-
-        private const string UIConnectionString =
-            @"Server=localhost;Port=5432;Database=hangfire_tests;User Id=postgres;Password=password;Search Path=hangfire;Maximum Pool Size=2";
+            @"Server=localhost;Port=5432;Database=hangfire_tests;User Id=postgres;Password=password;Search Path=hangfire;Maximum Pool Size=50;Max Auto Prepare=15;No Reset On Close=true";
 
         public static string GetConnectionString() => Environment.GetEnvironmentVariable(ConnectionStringVariableName) ?? DefaultConnectionString;
 
@@ -56,7 +53,7 @@ namespace Hangfire.PostgreSql.Tests.Web
                 Queues = new[] { "queue2", "queue1", "default" }
             });
 
-            app.UseHangfireDashboard("", new DashboardOptions { StatsPollingInterval = 1000 }, new PostgreSqlStorage(UIConnectionString));
+            app.UseHangfireDashboard("", new DashboardOptions { StatsPollingInterval = 1000 });
             RecurringJob.AddOrUpdate(() => TestSuite.Alloc(), Cron.Yearly, TimeZoneInfo.Utc);
             RecurringJob.AddOrUpdate(() => TestSuite.CpuKill(25), Cron.Yearly, TimeZoneInfo.Utc);
             RecurringJob.AddOrUpdate(() => TestSuite.ContinuationTest(), Cron.Yearly, TimeZoneInfo.Utc);

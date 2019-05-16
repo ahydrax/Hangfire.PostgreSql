@@ -27,7 +27,7 @@ namespace Hangfire.PostgreSql.Connectivity
             }
         }
 
-        public static T Fetch<T>(this IConnectionProvider connectionProvider,
+        public static T FetchScalar<T>(this IConnectionProvider connectionProvider,
             string sql,
             object param = null,
             IDbTransaction transaction = null,

@@ -55,7 +55,7 @@ namespace Hangfire.PostgreSql.Tests
             _expirationManager.Execute(_tokenSource.Token);
 
             // Assert
-            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from counter");
+            var recordsCount = _connectionProvider.FetchScalar<int>("select count(*) from counter");
             Assert.Equal(0, recordsCount);
         }
 
@@ -69,7 +69,7 @@ namespace Hangfire.PostgreSql.Tests
             _expirationManager.Execute(_tokenSource.Token);
 
             // Assert
-            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from counter");
+            var recordsCount = _connectionProvider.FetchScalar<int>("select count(*) from counter");
             Assert.Equal(1, recordsCount);
         }
 
@@ -83,7 +83,7 @@ namespace Hangfire.PostgreSql.Tests
             _expirationManager.Execute(_tokenSource.Token);
 
             // Assert
-            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from counter");
+            var recordsCount = _connectionProvider.FetchScalar<int>("select count(*) from counter");
             Assert.Equal(1, recordsCount);
         }
 
@@ -97,7 +97,7 @@ namespace Hangfire.PostgreSql.Tests
             _expirationManager.Execute(_tokenSource.Token);
 
             // Assert
-            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from counter");
+            var recordsCount = _connectionProvider.FetchScalar<int>("select count(*) from counter");
             Assert.Equal(0, recordsCount);
         }
 
@@ -123,7 +123,7 @@ values ('', '', now() at time zone 'utc', @expireAt)";
             _expirationManager.Execute(_tokenSource.Token);
 
             // Assert
-            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from job");
+            var recordsCount = _connectionProvider.FetchScalar<int>("select count(*) from job");
             Assert.Equal(0, recordsCount);
         }
 
@@ -140,7 +140,7 @@ values ('key', @expireAt)";
             _expirationManager.Execute(_tokenSource.Token);
 
             // Assert
-            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from list");
+            var recordsCount = _connectionProvider.FetchScalar<int>("select count(*) from list");
             Assert.Equal(0, recordsCount);
         }
 
@@ -157,7 +157,7 @@ values ('key', 0, '', @expireAt)";
             _expirationManager.Execute(_tokenSource.Token);
 
             // Assert
-            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from set");
+            var recordsCount = _connectionProvider.FetchScalar<int>("select count(*) from set");
             Assert.Equal(0, recordsCount);
         }
 
@@ -174,7 +174,7 @@ values ('key', 'field', '', @expireAt)";
             _expirationManager.Execute(_tokenSource.Token);
 
             // Assert
-            var recordsCount = _connectionProvider.Fetch<int>("select count(*) from set");
+            var recordsCount = _connectionProvider.FetchScalar<int>("select count(*) from set");
             Assert.Equal(0, recordsCount);
         }
     }
