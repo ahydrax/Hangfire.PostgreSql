@@ -1,9 +1,6 @@
 using System;
-using System.Data;
 using System.Globalization;
-using System.Linq;
 using System.Threading;
-using Dapper;
 using Hangfire.Common;
 using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Entities;
@@ -42,17 +39,17 @@ values (@jobId, @queue)
             cancellationToken.ThrowIfCancellationRequested();
 
             var fetchJobSqlTemplate = $@"
-update jobqueue as jobqueue
+update jobqueue
 set fetchedat = @fetched
-where jobqueue.id = (
+where id = (
     select id
     from jobqueue
     where queue IN ('{string.Join("', '", queues)}')
     and (fetchedat is null or fetchedat < @timeout)
-    order by jobqueue.id desc
+    order by id asc
     limit 1
-    FOR update SKIP LOCKED)
-returning jobqueue.id as Id, jobid as JobId, queue as Queue, fetchedat as FetchedAt;
+    for update skip locked)
+returning id as Id, jobid as JobId, queue as Queue, fetchedat as FetchedAt;
 ";
 
             FetchedJobDto fetchedJobDto;
@@ -61,7 +58,7 @@ returning jobqueue.id as Id, jobid as JobId, queue as Queue, fetchedat as Fetche
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var now = DateTime.UtcNow;
-                var parameters = new { fetched = now, timeout = now - _options.InvisibilityTimeout, queues = queues };
+                var parameters = new { fetched = now, timeout = now - _options.InvisibilityTimeout };
                 fetchedJobDto = _connectionProvider.FetchFirstOrDefault<FetchedJobDto>(fetchJobSqlTemplate, parameters);
 
                 if (fetchedJobDto == null) cancellationToken.Wait(_options.QueuePollInterval);
