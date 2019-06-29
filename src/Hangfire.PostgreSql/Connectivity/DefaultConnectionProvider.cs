@@ -114,7 +114,7 @@ namespace Hangfire.PostgreSql.Connectivity
 
                 if (stopwatch.Elapsed > DisposeTimeout && _activeConnections > 0)
                 {
-                    string message = $"Disposing of connection pool took too long.  Connections left: {_activeConnections}";
+                    var message = $"Disposing of connection pool took too long. Connections left: {_activeConnections}";
                     Logger.Error(message);
                     throw new TimeoutException(message);
                 }

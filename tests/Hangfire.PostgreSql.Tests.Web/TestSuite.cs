@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Hangfire.Console;
+using Hangfire.Server;
 
 namespace Hangfire.PostgreSql.Tests.Web
 {
@@ -58,7 +60,7 @@ namespace Hangfire.PostgreSql.Tests.Web
 
         public static void ContinuationTest()
         {
-            var jobA = BackgroundJob.Enqueue(() => ContinuationPartA());
+            var jobA = BackgroundJob.Enqueue(() => ContinuationPartA(null));
             var jobB = BackgroundJob.ContinueJobWith(jobA,
                 () => ContinuationPartB(),
                 JobContinuationOptions.OnlyOnSucceededState);
@@ -69,7 +71,24 @@ namespace Hangfire.PostgreSql.Tests.Web
         }
 
         [Queue("queue1")]
-        public static void ContinuationPartA() => Thread.Sleep(TimeSpan.FromSeconds(5));
+        public static async Task ContinuationPartA(PerformContext context)
+        {
+            var progress = context.WriteProgressBar("completion", 0);
+            await Task.Yield();
+
+            for (int i = 0; i < 100; i++)
+            {
+                await Task.Delay(100);
+                progress.SetValue(i);
+            }
+
+            for (int i = 0; i < 1000; i++)
+            {
+                context.WriteLine($"printed {i}, {DateTime.UtcNow:O}");
+            }
+
+            await Task.Delay(5000);
+        }
 
         [AutomaticRetry(Attempts = 0)]
         public static void ContinuationPartB() => throw new InvalidOperationException("TEST OK");

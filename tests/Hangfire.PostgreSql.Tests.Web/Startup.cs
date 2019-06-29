@@ -1,4 +1,5 @@
 ﻿using System;
+using Hangfire.Console;
 using Hangfire.Logging;
 using Hangfire.PostgreSql.Tests.Integration;
 using Microsoft.AspNetCore.Builder;
@@ -37,6 +38,7 @@ namespace Hangfire.PostgreSql.Tests.Web
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.PostgreSqlLocksCount);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.PostgreSqlServerVersion);
                 configuration.UsePostgreSqlStorage(GetConnectionString());
+                configuration.UseConsole();
             });
         }
 

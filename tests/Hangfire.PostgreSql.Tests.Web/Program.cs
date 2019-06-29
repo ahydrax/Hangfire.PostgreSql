@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using static Microsoft.AspNetCore.WebHost;
 
 namespace Hangfire.PostgreSql.Tests.Web
