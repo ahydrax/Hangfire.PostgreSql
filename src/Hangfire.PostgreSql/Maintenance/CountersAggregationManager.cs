@@ -26,7 +26,7 @@ namespace Hangfire.PostgreSql.Maintenance
         private readonly TimeSpan _checkInterval;
 
         public CountersAggregationManager(IConnectionProvider connectionProvider)
-            : this(connectionProvider, TimeSpan.FromSeconds(10))
+            : this(connectionProvider, TimeSpan.FromSeconds(30))
         {
         }
 

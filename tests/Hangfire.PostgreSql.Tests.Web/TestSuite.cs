@@ -79,7 +79,7 @@ namespace Hangfire.PostgreSql.Tests.Web
             for (int i = 0; i < 100; i++)
             {
                 await Task.Delay(100);
-                progress.SetValue(i);
+                progress.SetValue(i + 1);
             }
 
             for (int i = 0; i < 1000; i++)
