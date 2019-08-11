@@ -36,8 +36,8 @@ namespace Hangfire.PostgreSql
             const string query = @"
 select count(*) 
 from jobqueue 
-where fetchedat is null 
-and queue = @queue
+where queue = @queue 
+and fetchedat is null
 ";
             return GetLong(queue, query);
         }
@@ -47,8 +47,8 @@ and queue = @queue
             const string query = @"
 select count(*) 
 from jobqueue 
-where fetchedat is not null 
-and queue = @queue
+where queue = @queue
+and fetchedat is not null
 ";
             return GetLong(queue, query);
         }

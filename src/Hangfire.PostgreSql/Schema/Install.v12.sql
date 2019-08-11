@@ -24,6 +24,9 @@ ALTER TABLE jobparameter ALTER COLUMN jobid TYPE BIGINT;
 ALTER TABLE jobqueue ALTER COLUMN id TYPE BIGINT;
 ALTER SEQUENCE jobqueue_id_seq AS BIGINT;
 ALTER TABLE jobqueue ALTER COLUMN jobid TYPE BIGINT;
+DROP INDEX ix_hangfire_jobqueue_jobidandqueue;
+DROP INDEX ix_hangfire_jobqueue_queueandfetchedat;
+CREATE INDEX ix_hangfire_jobqueue_queue_fetchedat ON jobqueue (queue, fetchedat);
 
 ALTER TABLE lock ALTER COLUMN resource TYPE TEXT;
 

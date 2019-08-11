@@ -46,7 +46,6 @@ where id = (
     from jobqueue
     where queue IN ('{string.Join("', '", queues)}')
     and (fetchedat is null or fetchedat < @timeout)
-    order by id asc
     limit 1
     for update skip locked)
 returning id as Id, jobid as JobId, queue as Queue, fetchedat as FetchedAt;
