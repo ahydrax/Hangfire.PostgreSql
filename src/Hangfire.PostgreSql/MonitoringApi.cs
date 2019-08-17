@@ -384,7 +384,7 @@ limit @count OFFSET @start;
                     if (DateTime.UtcNow - TimeSpan.FromSeconds(5) > _cachedQueuesUpdatedAt)
                     {
                         _cachedQueuesUpdatedAt = DateTime.UtcNow;
-                        const string query = @"select DISTINCT queue from jobqueue;";
+                        const string query = @"select distinct queue from jobqueue;";
                         _cachedQueues = _connectionProvider.FetchList<string>(query);
                     }
                 }
