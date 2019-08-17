@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
-using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Tests.Utils;
 using Hangfire.Server;
 using Hangfire.States;
