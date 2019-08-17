@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.IO;
@@ -45,7 +46,16 @@ namespace Hangfire.PostgreSql
                     var lastMigration = default(MigrationInfo);
                     foreach (var migration in availableMigrations)
                     {
-                        connection.Execute(migration.Script, transaction: transaction);
+                        try
+                        {
+                            connection.Execute(migration.Script, transaction: transaction);
+                        }
+                        catch (Exception e)
+                        {
+                            var errorMessage = $"Error during installing v{migration.Version}";
+                            Log.ErrorException(errorMessage, e);
+                            throw new ApplicationException(errorMessage, e);
+                        }
                         lastMigration = migration;
                         Log.Info($"Installing Hangfire SQL migration #{migration.Version}");
                     }
