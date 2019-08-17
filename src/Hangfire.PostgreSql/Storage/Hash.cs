@@ -18,7 +18,6 @@ namespace Hangfire.PostgreSql.Storage
 select field as Field, value as Value 
 from hash 
 where key = @key
-order by id asc
 ;";
 
             var result = _connectionProvider
