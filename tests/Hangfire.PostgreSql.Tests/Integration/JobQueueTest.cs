@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Hangfire.Common;
+using Hangfire.PostgreSql.Queueing;
 using Hangfire.PostgreSql.Tests.Utils;
 using Xunit;
 using Xunit.Abstractions;

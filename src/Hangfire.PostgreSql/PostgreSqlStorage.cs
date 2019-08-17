@@ -4,6 +4,7 @@ using Hangfire.Annotations;
 using Hangfire.Logging;
 using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Maintenance;
+using Hangfire.PostgreSql.Queueing;
 using Hangfire.PostgreSql.Storage;
 using Hangfire.Server;
 using Hangfire.Storage;
@@ -21,6 +22,7 @@ namespace Hangfire.PostgreSql
         private readonly string _storageInfo;
         private readonly StorageConnection _storageConnection;
         private readonly MonitoringApi _monitoringApi;
+        private readonly MonitoringJobQueueProvider _queueProvider;
 
         /// <summary>
         /// Initializes PostgreSqlStorage with the provided connection string and default PostgreSqlStorageOptions.
@@ -77,8 +79,9 @@ namespace Hangfire.PostgreSql
             _connectionProvider = CreateConnectionProvider(connectionBuilder);
 
             var queue = new JobQueue(_connectionProvider, _options);
+            _queueProvider = new MonitoringJobQueueProvider(_connectionProvider, TimeSpan.FromMinutes(1));
             _storageConnection = new StorageConnection(_connectionProvider, queue, _options);
-            _monitoringApi = new MonitoringApi(_connectionProvider);
+            _monitoringApi = new MonitoringApi(_connectionProvider, _queueProvider);
 
             var builder = connectionBuilder.ConnectionStringBuilder;
             _storageInfo = $"PostgreSQL Server: Host: {builder.Host}, DB: {builder.Database}, Schema: {builder.SearchPath}, Pool: {_connectionProvider.GetType().Name}";
@@ -115,6 +118,7 @@ namespace Hangfire.PostgreSql
             => new IServerComponent[]
 #pragma warning restore 618
             {
+                _queueProvider,
                 new ExpirationManager(_connectionProvider),
                 new ExpiredLocksManager(_connectionProvider, _options.DistributedLockTimeout),
                 new CountersAggregationManager(_connectionProvider)

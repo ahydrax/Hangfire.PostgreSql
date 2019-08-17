@@ -5,6 +5,7 @@ using Dapper;
 using Hangfire.Common;
 using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Entities;
+using Hangfire.PostgreSql.Queueing;
 using Hangfire.States;
 using Hangfire.Storage;
 using Hangfire.Storage.Monitoring;
@@ -19,12 +20,15 @@ namespace Hangfire.PostgreSql
         private const string DescOrder = "desc";
 
         private readonly IConnectionProvider _connectionProvider;
+        private readonly IJobQueueProvider _queueProvider;
 
-        public MonitoringApi(IConnectionProvider connectionProvider)
+        public MonitoringApi(IConnectionProvider connectionProvider, IJobQueueProvider queueProvider)
         {
             Guard.ThrowIfNull(connectionProvider, nameof(connectionProvider));
+            Guard.ThrowIfNull(queueProvider, nameof(queueProvider));
 
             _connectionProvider = connectionProvider;
+            _queueProvider = queueProvider;
         }
 
         public long ScheduledCount()
@@ -153,7 +157,8 @@ and fetchedat is not null
 
         public IList<QueueWithTopEnqueuedJobsDto> Queues()
         {
-            var queues = GetQueues().ToArray();
+            var queuesEnumerable = GetQueues();
+            var queues = queuesEnumerable as string[] ?? queuesEnumerable.ToArray();
 
             var queueInfos = new List<QueueWithTopEnqueuedJobsDto>(queues.Length);
             foreach (var queue in queues)
@@ -370,28 +375,7 @@ limit @count OFFSET @start;
         private const string EnqueuedFetchCondition = "is null";
         private const string FetchedFetchCondition = "is not null";
 
-
-        private readonly object _cachedQueuesSyncRoot = new object();
-        private DateTime _cachedQueuesUpdatedAt = DateTime.MinValue;
-        private List<string> _cachedQueues = new List<string>(0);
-
-        public IEnumerable<string> GetQueues()
-        {
-            if (DateTime.UtcNow - TimeSpan.FromSeconds(5) > _cachedQueuesUpdatedAt)
-            {
-                lock (_cachedQueuesSyncRoot)
-                {
-                    if (DateTime.UtcNow - TimeSpan.FromSeconds(5) > _cachedQueuesUpdatedAt)
-                    {
-                        _cachedQueuesUpdatedAt = DateTime.UtcNow;
-                        const string query = @"select distinct queue from jobqueue;";
-                        _cachedQueues = _connectionProvider.FetchList<string>(query);
-                    }
-                }
-            }
-
-            return _cachedQueues;
-        }
+        public IEnumerable<string> GetQueues() => _queueProvider.GetQueues();
 
         public JobList<EnqueuedJobDto> EnqueuedJobs(string queue, int from, int perPage)
         {

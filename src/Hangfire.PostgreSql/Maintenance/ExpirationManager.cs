@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Data;
-using System.Globalization;
 using System.Threading;
 using Dapper;
 using Hangfire.Common;

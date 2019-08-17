@@ -1,7 +1,7 @@
 using System.Threading;
 using Hangfire.Storage;
 
-namespace Hangfire.PostgreSql
+namespace Hangfire.PostgreSql.Queueing
 {
     internal interface IJobQueue
     {

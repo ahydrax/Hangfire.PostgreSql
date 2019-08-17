@@ -45,7 +45,7 @@ namespace Hangfire.PostgreSql.Tests.Web
                 HeartbeatInterval = TimeSpan.FromSeconds(5),
                 ServerTimeout = TimeSpan.FromSeconds(15),
                 ServerName = "Hangfire Test Server",
-                WorkerCount = 100,
+                WorkerCount = 50,
                 Queues = new[] { "queue2", "queue1", "default" }
             });
 

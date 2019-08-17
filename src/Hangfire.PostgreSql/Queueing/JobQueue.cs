@@ -7,7 +7,7 @@ using Hangfire.PostgreSql.Entities;
 using Hangfire.Storage;
 
 // ReSharper disable RedundantAnonymousTypePropertyName
-namespace Hangfire.PostgreSql
+namespace Hangfire.PostgreSql.Queueing
 {
     internal sealed class JobQueue : IJobQueue
     {

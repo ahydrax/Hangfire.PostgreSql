@@ -6,6 +6,7 @@ using System.Threading;
 using Dapper;
 using Hangfire.Common;
 using Hangfire.PostgreSql.Connectivity;
+using Hangfire.PostgreSql.Queueing;
 using Hangfire.PostgreSql.Storage;
 using Hangfire.PostgreSql.Tests.Utils;
 using Hangfire.Server;

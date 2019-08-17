@@ -96,6 +96,12 @@ namespace Hangfire.PostgreSql.Tests.Web
         [Queue("queue2")]
         public static string ContinuationPartC() => "DONE";
 
+        [Queue("queue1")]
+        public static string ContinuationPartC2() => "DONE";
+
+        [Queue("default")]
+        public static string ContinuationPartC3() => "DONE";
+
         public static object TaskBurst()
         {
             var bjc = new BackgroundJobClient(JobStorage.Current);
@@ -107,7 +113,18 @@ namespace Hangfire.PostgreSql.Tests.Web
             {
                 for (int j = 0; j < tasksPerBatch; j++)
                 {
-                    bjc.Enqueue(() => ContinuationPartC());
+                    if (i % 2 == 0)
+                    {
+                        bjc.Enqueue(() => ContinuationPartC2());
+                    }
+                    else if (i % 3 == 0)
+                    {
+                        bjc.Enqueue(() => ContinuationPartC3());
+                    }
+                    else
+                    {
+                        bjc.Enqueue(() => ContinuationPartC());
+                    }
                 }
             });
 

@@ -8,6 +8,7 @@ using Dapper;
 using Hangfire.Common;
 using Hangfire.PostgreSql.Connectivity;
 using Hangfire.PostgreSql.Entities;
+using Hangfire.PostgreSql.Queueing;
 using Hangfire.Storage;
 
 namespace Hangfire.PostgreSql.Storage
