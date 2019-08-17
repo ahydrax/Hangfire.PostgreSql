@@ -1,7 +1,7 @@
 ﻿using System;
 using Hangfire.Console;
-using Hangfire.Logging;
 using Hangfire.PostgreSql.Tests.Integration;
+using Hangfire.PostgreSql.Tests.Utils;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -11,13 +11,6 @@ namespace Hangfire.PostgreSql.Tests.Web
 {
     public class Startup
     {
-        private const string ConnectionStringVariableName = "Hangfire_PostgreSql_ConnectionString";
-
-        private const string DefaultConnectionString =
-            @"Server=localhost;Port=5432;Database=hangfire_tests;User Id=postgres;Password=password;Search Path=hangfire;Maximum Pool Size=50;Max Auto Prepare=15;No Reset On Close=true";
-
-        public static string GetConnectionString() => Environment.GetEnvironmentVariable(ConnectionStringVariableName) ?? DefaultConnectionString;
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -27,6 +20,7 @@ namespace Hangfire.PostgreSql.Tests.Web
 
         public void ConfigureServices(IServiceCollection services)
         {
+            var connectionString = Environment.GetEnvironmentVariable("Hangfire_PostgreSql_ConnectionString");
             services.AddMvc();
             services.AddHangfire(configuration =>
             {
@@ -37,7 +31,7 @@ namespace Hangfire.PostgreSql.Tests.Web
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.DistributedLocksCount);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.PostgreSqlLocksCount);
                 configuration.UseDashboardMetric(PostgreSqlDashboardMetrics.PostgreSqlServerVersion);
-                configuration.UsePostgreSqlStorage(GetConnectionString());
+                configuration.UsePostgreSqlStorage(connectionString);
                 configuration.UseConsole();
             });
         }
