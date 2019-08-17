@@ -55,7 +55,7 @@ namespace Hangfire.PostgreSql.Tests
             using (new DistributedLock("hello", TimeSpan.FromSeconds(1), _connectionProvider))
             {
                 // Act
-                var lockCount = _connectionProvider.FetchFirstOrDefault<long>(
+                var lockCount = _connectionProvider.FetchScalar<long>(
                     @"select count(*) from lock where resource = @resource;",
                     new { resource = "hello" });
 
@@ -103,7 +103,7 @@ namespace Hangfire.PostgreSql.Tests
             distributedLock.Dispose();
 
             // Assert
-            var lockCount = _connectionProvider.FetchFirstOrDefault<long>(
+            var lockCount = _connectionProvider.FetchScalar<long>(
                 @"select count(*) from lock where resource = @resource;",
                 new { resource = "hello" });
 

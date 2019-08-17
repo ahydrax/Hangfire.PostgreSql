@@ -58,7 +58,7 @@ returning id as Id, jobid as JobId, queue as Queue, fetchedat as FetchedAt;
 
                 var now = DateTime.UtcNow;
                 var parameters = new { fetched = now, timeout = now - _options.InvisibilityTimeout };
-                fetchedJobDto = _connectionProvider.FetchFirstOrDefault<FetchedJobDto>(fetchJobSqlTemplate, parameters);
+                fetchedJobDto = _connectionProvider.Fetch<FetchedJobDto>(fetchJobSqlTemplate, parameters);
 
                 if (fetchedJobDto == null) cancellationToken.Wait(_options.QueuePollInterval);
 

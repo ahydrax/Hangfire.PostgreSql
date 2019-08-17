@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using Dapper;
 using Hangfire.Common;
@@ -54,7 +53,7 @@ and fetchedat is not null
         }
 
         private long GetLong(string queue, string query)
-            => _connectionProvider.FetchFirstOrDefault<long>(query, new { queue = queue });
+            => _connectionProvider.FetchScalar<long>(query, new { queue = queue });
 
         public long FailedCount()
             => GetNumberOfJobsByStateName(FailedState.StateName);
@@ -456,7 +455,7 @@ select count(CASE WHEN fetchedat is null THEN 1 ELSE 0 END) as Enqueued,
 from jobqueue
 where queue = @queue
 ";
-            return _connectionProvider.FetchFirstOrDefault<EnqueuedAndFetchedJobsCount>(query, new { queue = queue });
+            return _connectionProvider.Fetch<EnqueuedAndFetchedJobsCount>(query, new { queue = queue });
         }
     }
 }

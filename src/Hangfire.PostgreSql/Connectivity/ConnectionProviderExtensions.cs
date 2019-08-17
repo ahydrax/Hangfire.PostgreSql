@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using Dapper;
-using Npgsql;
+using Hangfire.Annotations;
 
 namespace Hangfire.PostgreSql.Connectivity
 {
@@ -19,6 +17,25 @@ namespace Hangfire.PostgreSql.Connectivity
             using (var connectionHolder = connectionProvider.AcquireConnection())
             {
                 return connectionHolder.Connection.Execute(
+                    sql,
+                    param,
+                    transaction,
+                    commandTimeout,
+                    commandType);
+            }
+        }
+
+        [CanBeNull]
+        public static T Fetch<T>(this IConnectionProvider connectionProvider,
+            string sql,
+            object param = null,
+            IDbTransaction transaction = null,
+            int? commandTimeout = null,
+            CommandType? commandType = null)
+        {
+            using (var connectionHolder = connectionProvider.AcquireConnection())
+            {
+                return connectionHolder.Fetch<T>(
                     sql,
                     param,
                     transaction,
@@ -46,6 +63,7 @@ namespace Hangfire.PostgreSql.Connectivity
             }
         }
 
+        [NotNull]
         public static List<T> FetchList<T>(this IConnectionProvider connectionProvider,
             string sql,
             object param = null,
@@ -55,27 +73,7 @@ namespace Hangfire.PostgreSql.Connectivity
         {
             using (var connectionHolder = connectionProvider.AcquireConnection())
             {
-                var result = connectionHolder.Connection.Query<T>(
-                    sql,
-                    param,
-                    transaction,
-                    true,
-                    commandTimeout,
-                    commandType);
-                return result as List<T> ?? new List<T>(result);
-            }
-        }
-
-        public static T FetchFirstOrDefault<T>(this IConnectionProvider connectionProvider,
-            string sql,
-            object param = null,
-            IDbTransaction transaction = null,
-            int? commandTimeout = null,
-            CommandType? commandType = null)
-        {
-            using (var connectionHolder = connectionProvider.AcquireConnection())
-            {
-                return connectionHolder.Connection.QueryFirstOrDefault<T>(
+                return connectionHolder.FetchList<T>(
                     sql,
                     param,
                     transaction,

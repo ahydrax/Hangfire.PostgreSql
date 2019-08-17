@@ -33,7 +33,7 @@ where key = @key
 
             const string query = @"select count(*) from hash where key = @key";
 
-            return _connectionProvider.FetchFirstOrDefault<long>(query, new { key });
+            return _connectionProvider.FetchScalar<long>(query, new { key });
         }
 
         public override TimeSpan GetHashTtl(string key)
@@ -42,7 +42,7 @@ where key = @key
 
             const string query = @"select min(expireat) from hash where key = @key";
 
-            var result = _connectionProvider.FetchFirstOrDefault<DateTime?>(query, new { key });
+            var result = _connectionProvider.Fetch<DateTime?>(query, new { key });
             if (!result.HasValue) return TimeSpan.FromSeconds(-1);
 
             return result.Value - DateTime.UtcNow;
@@ -55,7 +55,7 @@ where key = @key
 
             const string query = @"select value from hash where key = @key and field = @field";
 
-            return _connectionProvider.FetchFirstOrDefault<string>(query, new { key, field = name });
+            return _connectionProvider.Fetch<string>(query, new { key, field = name });
         }
 
         public override void SetRangeInHash(string key, IEnumerable<KeyValuePair<string, string>> keyValuePairs)

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using Dapper;
-using Npgsql;
+using Hangfire.Annotations;
 
 namespace Hangfire.PostgreSql.Connectivity
 {
@@ -22,6 +20,7 @@ namespace Hangfire.PostgreSql.Connectivity
                 commandTimeout,
                 commandType);
 
+        [CanBeNull]
         public static T Fetch<T>(this ConnectionHolder connectionHolder,
             string sql,
             object param = null,
@@ -48,8 +47,9 @@ namespace Hangfire.PostgreSql.Connectivity
                    transaction,
                    commandTimeout,
                    commandType)
-               ?? default(T);
+               ?? default;
 
+        [NotNull]
         public static List<T> FetchList<T>(this ConnectionHolder connectionHolder,
             string sql,
             object param = null,

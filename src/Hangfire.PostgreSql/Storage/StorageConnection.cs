@@ -100,7 +100,7 @@ select invocationdata as invocationData, statename as stateName, arguments, crea
 from job 
 where id = @id;
 ";
-            var jobData = _connectionProvider.FetchFirstOrDefault<SqlJob>(sql, new { id = JobId.ToLong(jobId) });
+            var jobData = _connectionProvider.Fetch<SqlJob>(sql, new { id = JobId.ToLong(jobId) });
 
             if (jobData == null) return null;
 
@@ -142,7 +142,7 @@ inner join job j on j.stateid = s.id
 where j.id = @jobId;
 ";
 
-            var sqlState = _connectionProvider.FetchFirstOrDefault<SqlState>(query, new { jobId = JobId.ToLong(jobId) });
+            var sqlState = _connectionProvider.Fetch<SqlState>(query, new { jobId = JobId.ToLong(jobId) });
             if (sqlState == null) return null;
 
             return new StateData
@@ -176,7 +176,7 @@ do update set value = @value
 
             var jobId = JobId.ToLong(id);
             const string query = @"select value from jobparameter where jobid = @id and name = @name limit 1;";
-            return _connectionProvider.FetchFirstOrDefault<string>(query, new { id = jobId, name = name });
+            return _connectionProvider.Fetch<string>(query, new { id = jobId, name = name });
         }
 
         public override long GetCounter(string key)

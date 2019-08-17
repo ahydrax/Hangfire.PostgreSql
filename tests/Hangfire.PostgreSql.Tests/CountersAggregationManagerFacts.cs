@@ -35,7 +35,7 @@ namespace Hangfire.PostgreSql.Tests
 
             // Assert
             const string checkQuery = @"select count(*), sum(value) from counter";
-            var (recordsCount, recordsValue) = _connectionProvider.FetchFirstOrDefault<(long, long)>(checkQuery);
+            var (recordsCount, recordsValue) = _connectionProvider.Fetch<(long, long)>(checkQuery);
             Assert.Equal(1, recordsCount);
             Assert.Equal(sum, recordsValue);
         }

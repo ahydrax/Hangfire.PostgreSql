@@ -34,7 +34,7 @@ where key = @key
 and score between @from and @to 
 order by score 
 limit 1;";
-            return _connectionProvider.FetchFirstOrDefault<string>(query, new { key, from = fromScore, to = toScore });
+            return _connectionProvider.Fetch<string>(query, new { key, from = fromScore, to = toScore });
         }
 
         public override List<string> GetFirstByLowestScoreFromSet(string key, double fromScore, double toScore, int count)
@@ -58,7 +58,7 @@ limit {count};";
             Guard.ThrowIfNull(key, nameof(key));
 
             const string query = @"select count(key) from set where key = @key";
-            return _connectionProvider.FetchFirstOrDefault<long>(query, new { key });
+            return _connectionProvider.Fetch<long>(query, new { key });
         }
 
         public override List<string> GetRangeFromSet(string key, int startingFrom, int endingAt)
@@ -90,7 +90,7 @@ limit {endingAt - startingFrom + 1}";
 select min(expireat)
 from set
 where key = @key";
-            var result = _connectionProvider.FetchFirstOrDefault<DateTime?>(query, new { key });
+            var result = _connectionProvider.Fetch<DateTime?>(query, new { key });
 
             if (!result.HasValue) return TimeSpan.FromSeconds(-1);
             return result.Value - DateTime.UtcNow;

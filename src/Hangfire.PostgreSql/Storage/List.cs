@@ -22,7 +22,7 @@ namespace Hangfire.PostgreSql.Storage
             Guard.ThrowIfNull(key, nameof(key));
 
             const string query = @"select count(id) from list where key = @key";
-            return _connectionProvider.FetchFirstOrDefault<long>(query, new { key = key });
+            return _connectionProvider.Fetch<long>(query, new { key = key });
         }
 
         public override TimeSpan GetListTtl(string key)
@@ -31,7 +31,7 @@ namespace Hangfire.PostgreSql.Storage
 
             const string query = @"select min(expireat) from list where key = @key";
 
-            var result = _connectionProvider.FetchFirstOrDefault<DateTime?>(query, new { key = key });
+            var result = _connectionProvider.Fetch<DateTime?>(query, new { key = key });
 
             return result.HasValue ? result.Value - DateTime.UtcNow : TimeSpan.FromSeconds(-1);
         }
