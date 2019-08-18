@@ -49,6 +49,15 @@ namespace Hangfire.PostgreSql.Queueing
                     queues.Add(queueName);
                 }
             }
+
+            const string query1 = @"select distinct queue from jobqueue;";
+            var jobQueueQueues = _connectionProvider.FetchList<string>(query1);
+
+            foreach (var jobQueueQueue in jobQueueQueues)
+            {
+                queues.Add(jobQueueQueue);
+            }
+
             _queues = queues.OrderBy(x => x).ToArray();
 
             Logger.Info("Queues info updated");
