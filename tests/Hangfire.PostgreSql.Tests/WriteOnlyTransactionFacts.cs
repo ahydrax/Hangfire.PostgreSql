@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Linq;
 using Dapper;
 using Hangfire.PostgreSql.Connectivity;
-using Hangfire.PostgreSql.Queueing;
 using Hangfire.PostgreSql.Tests.Utils;
 using Hangfire.States;
 using Moq;
@@ -16,13 +15,6 @@ namespace Hangfire.PostgreSql.Tests
 {
     public class WriteOnlyTransactionFacts
     {
-        private readonly Mock<IJobQueue> _queue;
-
-        public WriteOnlyTransactionFacts()
-        {
-            _queue = new Mock<IJobQueue>();
-        }
-
         [Fact]
         public void Ctor_ThrowsAnException_IfConnectionIsNull()
         {
@@ -35,20 +27,21 @@ namespace Hangfire.PostgreSql.Tests
         [Fact, CleanDatabase]
         public void ExpireJob_SetsJobExpirationData()
         {
-            string arrangeSql = @"
-insert into """ + GetSchemaName() + @""".""job""(""invocationdata"", ""arguments"", ""createdat"")
-values ('', '', now() at time zone 'utc') returning ""id""";
+            const string arrangeSql = @"
+insert into job(invocationdata, arguments, createdat)
+values ('', '', now() at time zone 'utc') returning id";
 
             UseConnection((provider, connection) =>
             {
+                var utcNow = DateTime.UtcNow;
+
                 var jobId = connection.Query(arrangeSql).Single().id.ToString();
                 var anotherJobId = connection.Query(arrangeSql).Single().id.ToString();
 
                 Commit(provider, x => x.ExpireJob(jobId, TimeSpan.FromDays(1)));
 
                 var job = GetTestJob(connection, jobId);
-                Assert.True(DateTime.UtcNow.AddMinutes(-1) < job.expireat &&
-                            job.expireat <= DateTime.UtcNow.AddDays(1));
+                Assert.True(job.expireat >= utcNow.AddDays(1));
 
                 var anotherJob = GetTestJob(connection, anotherJobId);
                 Assert.Null(anotherJob.expireat);

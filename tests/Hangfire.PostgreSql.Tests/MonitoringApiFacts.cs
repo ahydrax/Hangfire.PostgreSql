@@ -137,16 +137,21 @@ namespace Hangfire.PostgreSql.Tests
             backgroundJobClient.Create(() => Worker.DoWork("hello-3"), new EnqueuedState("test2"));
             backgroundJobClient.Create(() => Worker.DoWork("hello-4"), new EnqueuedState("default"));
 
-            // Act
-            var queues = _monitoringApi
-                .Queues()
-                .Select(x => x.Name)
-                .ToArray();
+            using (var server = new BackgroundJobServer(_storage))
+            {
+                // Act
+                Thread.Sleep(5000); // -- wait till server complete boot
 
-            // Assert
-            Assert.Contains("default", queues);
-            Assert.Contains("test1", queues);
-            Assert.Contains("test2", queues);
+                var queues = _monitoringApi
+                    .Queues()
+                    .Select(x => x.Name)
+                    .ToArray();
+
+                // Assert
+                Assert.Contains("default", queues);
+                Assert.Contains("test1", queues);
+                Assert.Contains("test2", queues);
+            }
         }
 
         [Fact, CleanDatabase]
