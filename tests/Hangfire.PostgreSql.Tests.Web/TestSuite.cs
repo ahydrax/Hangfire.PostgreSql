@@ -102,6 +102,8 @@ namespace Hangfire.PostgreSql.Tests.Web
         [Queue("default")]
         public static string ContinuationPartC3() => "DONE";
 
+        public static string ContinuationPartC4() => "DONE";
+
         public static object TaskBurst()
         {
             var bjc = new BackgroundJobClient(JobStorage.Current);
