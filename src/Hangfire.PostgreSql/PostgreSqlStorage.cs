@@ -22,7 +22,7 @@ namespace Hangfire.PostgreSql
         private readonly string _storageInfo;
         private readonly StorageConnection _storageConnection;
         private readonly MonitoringApi _monitoringApi;
-        private readonly MonitoringJobQueueProvider _queueProvider;
+        private readonly PollingJobQueueProvider _queueProvider;
 
         /// <summary>
         /// Initializes PostgreSqlStorage with the provided connection string and default PostgreSqlStorageOptions.
@@ -79,7 +79,7 @@ namespace Hangfire.PostgreSql
             _connectionProvider = CreateConnectionProvider(connectionBuilder);
 
             var queue = new JobQueue(_connectionProvider, _options);
-            _queueProvider = new MonitoringJobQueueProvider(_connectionProvider, TimeSpan.FromMinutes(1));
+            _queueProvider = new PollingJobQueueProvider(_connectionProvider, TimeSpan.FromMinutes(1));
             _storageConnection = new StorageConnection(_connectionProvider, queue, _options);
             _monitoringApi = new MonitoringApi(_connectionProvider, _queueProvider);
 

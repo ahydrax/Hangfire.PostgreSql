@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Hangfire.Common;
@@ -11,16 +10,16 @@ using Hangfire.Server;
 namespace Hangfire.PostgreSql.Queueing
 {
 #pragma warning disable 618 // TODO Remove when Hangfire 2.0 will be released
-    internal sealed class MonitoringJobQueueProvider : IJobQueueProvider, IBackgroundProcess, IServerComponent
+    internal sealed class PollingJobQueueProvider : IJobQueueProvider, IBackgroundProcess, IServerComponent
 #pragma warning restore 618
     {
-        private static readonly ILog Logger = LogProvider.GetLogger(typeof(MonitoringJobQueueProvider));
+        private static readonly ILog Logger = LogProvider.GetLogger(typeof(PollingJobQueueProvider));
 
         private readonly IConnectionProvider _connectionProvider;
         private readonly TimeSpan _timeoutBetweenPasses;
         private string[] _queues = { "default" };
 
-        public MonitoringJobQueueProvider(IConnectionProvider connectionProvider, TimeSpan timeoutBetweenPasses)
+        public PollingJobQueueProvider(IConnectionProvider connectionProvider, TimeSpan timeoutBetweenPasses)
         {
             Guard.ThrowIfNull(connectionProvider, nameof(connectionProvider));
             Guard.ThrowIfValueIsNotPositive(timeoutBetweenPasses, nameof(timeoutBetweenPasses));
@@ -37,30 +36,22 @@ namespace Hangfire.PostgreSql.Queueing
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            const string query = @"select * from server";
-            var servers = _connectionProvider.FetchList<Entities.Server>(query);
-
-            var queues = new HashSet<string>();
-            foreach (var server in servers)
+            Logger.Info("Updating queue list.");
+            using (var connectionHolder = _connectionProvider.AcquireConnection())
             {
-                var serverData = SerializationHelper.Deserialize<ServerData>(server.Data);
-                foreach (var queueName in serverData.Queues)
-                {
-                    queues.Add(queueName);
-                }
+                var servers = connectionHolder.FetchList<string>(@"select data from server");
+                var jobQueues = connectionHolder.FetchList<string>(@"select distinct queue from jobqueue;");
+
+                _queues = servers
+                    .Select(SerializationHelper.Deserialize<ServerData>)
+                    .SelectMany(x => x.Queues)
+                    .Concat(jobQueues)
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .ToArray();
             }
 
-            const string query1 = @"select distinct queue from jobqueue;";
-            var jobQueueQueues = _connectionProvider.FetchList<string>(query1);
-
-            foreach (var jobQueueQueue in jobQueueQueues)
-            {
-                queues.Add(jobQueueQueue);
-            }
-
-            _queues = queues.OrderBy(x => x).ToArray();
-
-            Logger.Info("Queues info updated");
+            Logger.Info($"Queue list updated. Found {_queues.Length} queues.");
 
             cancellationToken.Wait(_timeoutBetweenPasses);
         }
