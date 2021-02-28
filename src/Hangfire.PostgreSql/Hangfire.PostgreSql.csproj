@@ -8,7 +8,7 @@
     <PackageLicense>https://raw.githubusercontent.com/ahydrax/Hangfire.PostgreSql/master/LICENSE.md</PackageLicense>
     <AssemblyTitle>Hangfire PostgreSQL Storage</AssemblyTitle>
     <Description>PostgreSQL storage implementation for Hangfire (background job system for ASP.NET applications).</Description>
-    <Copyright>Copyright © 2014-2019 Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Copyright>
+    <Copyright>Copyright © 2014-2021 Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Copyright>
     <Authors>Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Authors>
     <Company>Frank Hommers, Burhan Irmikci (barhun), Zachary Sims(zsims), kgamecarter, Stafford Williams (staff0rd), briangweber, Viktor Svyatokha (ahydrax), Christopher Dresel (Dresel), Ben Herila (bherila), Vytautas Kasparavičius (vytautask)</Company>
   </PropertyGroup>
@@ -18,13 +18,8 @@
     <AssemblyName>Hangfire.PostgreSql</AssemblyName>
     <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
     <OutputType>Library</OutputType>
-    <Version>1.7.1</Version>
-    <FileVersion>1.7.1</FileVersion>
-    <AssemblyVersion>1.7.1</AssemblyVersion>
-    <NeutralLanguage />
-    <DebugType>portable</DebugType>
+    <NeutralLanguage>en</NeutralLanguage>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
